@@ -12,7 +12,8 @@ or
     this.someProperty = ko.observable().reactTo(target, options, valueEvaluatorFunction);
 
 The target parameter can be a subscribable or a function/object containing at least one subscribable. The 
-valueEvaluatorFunction parameter accepts a function returning a new value when changes occur in the target.
+valueEvaluatorFunction parameter accepts a function returning a new value when changes occur in the target object or
+function.
 
 For example:
     
