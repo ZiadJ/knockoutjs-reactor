@@ -44,7 +44,7 @@ The observable <b>this.data</b> above listens to changes in all subscribables wi
 are created for subcribables used within the evaluator function.
 
 The callback parameter <b>trigger</b> is being used to determine what's been modified such that changes to <b>this.params.showSearch</b>
-can be ignored but yet another way to achieve this is to simply rearrange our object as follows:
+can be ignored but yet another way to achieve this is to simply rearrange our target object as follows:
 
     this.params = {
         name: ko.observable(),
