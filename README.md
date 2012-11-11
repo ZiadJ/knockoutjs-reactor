@@ -44,7 +44,7 @@ The observable <b>this.data</b> above listens to changes in all subscribables wi
 are created for subcribables used within the evaluator function.
 
 The callback parameter <b>trigger</b> is being used to determine what's been modified such that changes to <b>this.params.showSearch</b>
-can be ignored but yet another way to achieve this is to simply rearrange our target object as follows:
+can be ignored but yet another way to achieve this is to simply rearrange our target object like so:
 
     this.params = {
         name: ko.observable(),
@@ -57,7 +57,7 @@ can be ignored but yet another way to achieve this is to simply rearrange our ta
 This works because only first level subscribables are considered by default. However it is possible to make it fully 
 recursive as follows:
 
-    this.data = ko.observable().reactTo(this.params, { recurse: true } , function (params, modifiedProperty) {
+    this.data = ko.observable().reactTo(this.params, { recurse: true } , function (params, trigger) {
         ...
     }
 
