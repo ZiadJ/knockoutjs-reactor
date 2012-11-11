@@ -40,11 +40,10 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The observable this.data above listens to changes in all subscribables within this.params only. However to avoid unnecessary/unexpected 
-callbacks no listeners are created for any additional subcribables used within the evaluator function.
+The observable <b>this.data</b> above listens to changes in all subscribables within <b>this.params</b> but no additional listeners 
+are created for subcribables used within the evaluator function.
 
-
-To avoid listening to changes in this.params.showSearch our object can be rearranged as follows:
+If say we'd like to avoid listening to changes in this.params.showSearch we can rearrange our object as follows:
 
     this.params = {
         name: ko.observable(),
