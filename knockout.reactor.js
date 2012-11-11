@@ -5,7 +5,7 @@
 
 ko.subscribable.fn.reactTo = function (target, options, valueEvaluatorFunction) {
     /// <summary>
-    ///     React to changes in a specific target property.
+    ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
     ///     The target subscribable or object/function containing subscribables.
