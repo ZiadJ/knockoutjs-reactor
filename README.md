@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-Yet another and possibly cleaner way to add dependencies to any KnockoutJs subscribable.
+Yet another way to add dependencies to any KnockoutJs subscribable.
 
 <b>Usage:</b>
 
