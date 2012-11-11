@@ -43,8 +43,8 @@ For example:
 The observable <b>this.data</b> above listens to changes in all subscribables within <b>this.params</b> but no additional listeners 
 are created for subcribables used within the evaluator function.
 
-The callback parameter <b>trigger</b> is being used to determine what's been modified. In our case <b>this.params.showSearch</b>
-is being ignored but simply arranging our object as follows can achieve the same results:
+The callback parameter <b>trigger</b> is being used to determine what's been modified such that changes to <b>this.params.showSearch</b>
+can be ignored but yet another way to achieve this is to simply rearrange our object as follows:
 
     this.params = {
         name: ko.observable(),
@@ -61,7 +61,7 @@ recursive as follows:
         ...
     }
 
-Pausing and resuming the reactor is also possible like so:
+Finally pausing and resuming the reactor is also possible like this:
 
     this.data.pauseReactor();
     //...do work
