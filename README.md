@@ -5,11 +5,11 @@ Yet another way to add dependencies to any KnockoutJs subscribable.
 
 <b>Usage:</b>
 
-    this.someProperty = ko.observable().reactTo(target, valueEvaluatorFunction);
+    this.myProperty = ko.observable().reactTo(targetObjectOrFunction, valueEvaluatorFunction);
 
 or
 
-    this.someProperty = ko.observable().reactTo(target, options, valueEvaluatorFunction);
+    this.myProperty = ko.observable().reactTo(targetObjectOrFunction, options, valueEvaluatorFunction);
 
 The target parameter can be a subscribable or a function/object containing at least one subscribable. The 
 valueEvaluatorFunction parameter accepts a function returning a new value when changes occur in the target object or
@@ -41,7 +41,7 @@ For example:
     }).extend({ throttle: 200 });
     
 The observable this.data above listens to changes in all subscribables within this.params only. However to avoid unnecessary/unexpected 
-callbacks no listeners are created for the remaining subcribables within the evaluator function.
+callbacks no listeners are created for any additional subcribables used within the evaluator function.
 
 
 To avoid listening to changes in this.params.showSearch our object can be rearranged as follows:
