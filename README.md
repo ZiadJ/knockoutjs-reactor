@@ -43,7 +43,8 @@ For example:
 The observable <b>this.data</b> above listens to changes in all subscribables within <b>this.params</b> but no additional listeners 
 are created for subcribables used within the evaluator function.
 
-If say we'd like to avoid listening to changes in this.params.showSearch we can rearrange our object as follows:
+The callback parameter <b>trigger</b> is being used to determine what's been modified. In our case <b>this.params.showSearch</b>
+is being ignored but simply arranging our object as follows can achieve the same results:
 
     this.params = {
         name: ko.observable(),
