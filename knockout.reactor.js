@@ -71,4 +71,6 @@ ko.subscribable.fn.reactTo = function (target, options, valueEvaluatorFunction) 
     };
 
     return this;
-};
+}
+
+// ko.reactTo = function (target, options, callback) { return ko.observable().reactTo(target, options, callback); }
