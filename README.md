@@ -11,9 +11,11 @@ or
 
     this.myProperty = ko.observable().reactTo(targetObjectOrFunction, options, valueEvaluatorFunction);
 
-The target parameter can be a subscribable or a function/object containing at least one subscribable. The 
-valueEvaluatorFunction parameter accepts a function returning a new value when changes occur in the target object or
-function.
+The target parameter can be a subscribable or a function/object containing at least one subscribable. The valueEvaluatorFunction 
+parameter accepts the response function with two parameters the first being the target itself and the second being the
+child property that was modified. It returns a new value for the subscribable it is chained to.
+
+The options parameter can be used to create a recursive reactor in case the target contains nested subscribables.
 
 For example:
     
@@ -26,7 +28,7 @@ For example:
     };
 
     this.data = ko.observable().reactTo(this.params, function (params, trigger) {
-        if (trigger != params.showSearch) { // Ignore changes in showSearch.
+        if (trigger != params.showSearch) { // We do not want to react to changes in showSearch.
             params = ko.toJS(params); // unwrap observables.
             var result = getDataFromCache(params); // Read from cache.
             if (result) {
@@ -40,11 +42,11 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The observable <b>this.data</b> above listens to changes in all subscribables within <b>this.params</b> but no additional listeners 
-are created for subcribables used within the evaluator function.
+The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b>. Note that no additional listeners 
+are created for subcribables used within the evaluator function as it might be the case with the ko.computed function.
 
-The callback parameter <b>trigger</b> is being used to determine what's been modified such that changes to <b>this.params.showSearch</b>
-can be ignored but yet another way to achieve this is to simply rearrange our target object like so:
+The parameter <b>trigger</b> determines which property has changed. In our case it is used to ignore changes to <b>this.params.showSearch</b>.
+But since only first level subscribables are listened to by default we could achieve the same results like so:
 
     this.params = {
         name: ko.observable(),
@@ -54,8 +56,13 @@ can be ignored but yet another way to achieve this is to simply rearrange our ta
         }
     };
 
-This works because only first level subscribables are considered by default. However it is possible to make it fully 
-recursive as follows:
+Or we could use the following code instead:
+
+    this.data = ko.observable().reactTo({ this.params.name(), this.params.surname }, function (params, trigger) {
+        ...
+    }
+
+To create a fully recursive reactor we can pass in { recursive: true } as the options parameter:
 
     this.data = ko.observable().reactTo(this.params, { recurse: true } , function (params, trigger) {
         ...
