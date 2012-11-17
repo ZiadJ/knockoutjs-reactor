@@ -13,7 +13,7 @@ or
 
 The target parameter can be a subscribable or a function/object containing at least one subscribable. The valueEvaluatorFunction 
 parameter is the response function that returns the new value. It gets called with two parameters the first being the target 
-itself and the second being child property that was modified.
+itself and the second being the child property that was modified.
 
 For example:
     
@@ -27,16 +27,12 @@ For example:
 
     this.data = ko.observable().reactTo(this.params, function (params, trigger) {
         if (trigger != params.showSearch) { // We do not want to react to changes in showSearch.
+            var data = this; // Save context.
             params = ko.toJS(params); // unwrap observables.
             var result = getDataFromCache(params); // Read from cache.
-            if (result) {
-                return result; // update value synchronously.
-            } else {
-                var data = this; // Save context.
-                getDataAsync(params, function (result) { // Read from web service.
-                    data(result); // Update value asynchronously(self.data can also be used).
-                });
-            }
+            return result || getDataAsync(params, function (result) { // Set new value if found or read from web service.
+                data(result); // Update value asynchronously(self.data can also be used).
+            });
         }
     }).extend({ throttle: 200 });
     
