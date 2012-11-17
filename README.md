@@ -12,10 +12,8 @@ or
     this.myProperty = ko.observable().reactTo(targetObjectOrFunction, options, valueEvaluatorFunction);
 
 The target parameter can be a subscribable or a function/object containing at least one subscribable. The valueEvaluatorFunction 
-parameter accepts the response function with two parameters the first being the target itself and the second being the
-child property that was modified. It returns a new value for the subscribable it is chained to.
-
-The options parameter can be used to create a recursive reactor in case the target contains nested subscribables.
+parameter is the response function that returns the new value. It gets called with two parameters the first being the target 
+itself and the second being child property that was modified.
 
 For example:
     
@@ -42,11 +40,11 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b>. Note that no additional listeners 
-are created for subcribables used within the evaluator function as it might be the case with the ko.computed function.
+The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b> in a more intuitive
+manner.
 
-The parameter <b>trigger</b> determines which property has changed. In our case it is used to ignore changes to <b>this.params.showSearch</b>.
-But since only first level subscribables are listened to by default we could achieve the same results like so:
+The parameter <b>trigger</b> which determines which property has changed is used to ignore changes to <b>this.params.showSearch</b> 
+but since only first level subscribables are listened to by default we could achieve the same results like so:
 
     this.params = {
         name: ko.observable(),
@@ -56,7 +54,7 @@ But since only first level subscribables are listened to by default we could ach
         }
     };
 
-Or we could use the following code instead:
+Or we could use the following instead:
 
     this.data = ko.observable().reactTo({ this.params.name(), this.params.surname }, function (params, trigger) {
         ...
@@ -67,8 +65,11 @@ To create a fully recursive reactor we can pass in { recursive: true } as the op
     this.data = ko.observable().reactTo(this.params, { recurse: true } , function (params, trigger) {
         ...
     }
+    
+Note that no additional listeners are created for subcribables used within the evaluator function as it might be the case
+with the ko.computed function.
 
-Finally pausing and resuming the reactor is also possible like this:
+Finally pausing and resuming our reactor can be done like so:
 
     this.data.pauseReactor();
     //...do work
