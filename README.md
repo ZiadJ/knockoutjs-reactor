@@ -36,10 +36,10 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b> in a more intuitive
+The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b> in an intuitive
 manner.
 
-The parameter <b>trigger</b> which determines which property has changed is used to ignore changes to <b>this.params.showSearch</b> 
+The parameter <b>trigger</b> which determines which property has changed is used to ignore changes in <b>this.params.showSearch</b> 
 but since only first level subscribables are listened to by default we could achieve the same results like so:
 
     this.params = {
