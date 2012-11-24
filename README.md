@@ -11,9 +11,9 @@ or
 
     this.myProperty = ko.observable().watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
-The target parameter supports any subscribable or function/object containing the targeted subscribables. The valueEvaluatorFunction 
-parameter is the response function which aquires two parameters the first being the target itself and the second being the child 
-property that was modified. Its return value is used to update the subscribable to which it is chained.
+The target parameter supports any subscribable or function/object containing the targeted subscribables. <b>valueEvaluatorFunction</b> is
+the response function which aquires two parameters the first being the target itself and the second being the child property 
+that was modified. Its return value is used to update the subscribable to which it is chained.
 
 For example:
     
@@ -36,8 +36,8 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The code above creates an observable this.data that reacts to changes within this.params within one line of code. 
-The parameter trigger which determines which property has changed is used to ignore changes in this.params.showSearch.
+The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</> within one line of code. 
+The parameter <b>trigger</b> which determines which property has changed is used to ignore changes in <b>this.params.showSearch</b>.
 
 However since only first level subscribables are listened to by default we could achieve the same results like so:
 
@@ -55,14 +55,14 @@ Or we could use the following instead:
         ...
     }
 
-To create a fully recursive reactor we can pass in { recursive: true } as the options parameter:
+To create a fully recursive reactor we can pass in <b>{ recursive: true }</b> as the options parameter:
 
     this.data = ko.observable().watch(this.params, { recurse: true } , function (params, trigger) {
         ...
     }
     
 Note that no additional listeners are created for subcribables used within the evaluator function as it might be the case
-with the ko.computed function.
+with the <b>ko.computed</b> function.
 
 Finally pausing and resuming our reactor can be done like so:
 
