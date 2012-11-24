@@ -1,21 +1,21 @@
 // Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.0
+// Version 0.9
 
-ko.subscribable.fn.reactTo = function (target, options, valueEvaluatorFunction) {
+ko.subscribable.fn.watch = function (target, options, valueEvaluatorFunction) {
     /// <summary>
     ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
-    ///     The target subscribable or object/function containing subscribables.
+    ///     The target subscribable or object/function containing the subscribable(s).
     /// </param>
     /// <param name="options" type="object">
     ///     { recurse: true } -> Listen to all nested children if any.
     ///     This parameter can be omitted.
     /// </param>
     /// <param name="valueEvaluatorFunction" type="function">
-    ///     The evaluator or function used to update the value as changes occur.
+    ///     The evaluator or function used to update the value during changes.
     /// </param>
 
     if (valueEvaluatorFunction == undefined) {
@@ -27,17 +27,17 @@ ko.subscribable.fn.reactTo = function (target, options, valueEvaluatorFunction) 
     var context = this;
 
     if (typeof target == "object") {
-        function reactToChildren(object, recurse) {
+        function watchChildren(object, recurse) {
             // Listen to all subscribables within target object.
             for (var property in object) {
                 if (recurse && typeof target[property] == 'object')
-                    reactToChildren(object[property]);
+                    watchChildren(object[property]);
                 else if (ko.isSubscribable(object[property], recurse))
-                    context.reactTo(object[property], options, valueEvaluatorFunction);
+                    context.watch(object[property], options, valueEvaluatorFunction);
             }
         }
         options.targetParent = target;
-        reactToChildren(target, options.recurse);
+        watchChildren(target, options.recurse);
     } else if (ko.isSubscribable(target)) {
         // For performance reasons lets use a subscription instead of a computed when targeting subscribables.
         target.subscribe(function (targetValue) {
@@ -62,15 +62,16 @@ ko.subscribable.fn.reactTo = function (target, options, valueEvaluatorFunction) 
         });
     }
 
-    this.pauseReactor = function () {
+    this.pauseWatch = function () {
         context.isPaused = true;
     };
 
-    this.resumeReactor = function () {
+    this.resumeWatch = function () {
         context.isPaused = false;
     };
 
     return this;
 }
 
-// ko.reactTo = function (target, options, callback) { return ko.observable().reactTo(target, options, callback); }
+
+// ko.watch = function (target, options, callback) { return ko.observable().reactTo(target, options, callback); }
