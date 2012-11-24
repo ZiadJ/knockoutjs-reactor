@@ -12,8 +12,8 @@ or
     this.myProperty = ko.observable().watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
 The target parameter supports any subscribable or function/object containing the targeted subscribables. The valueEvaluatorFunction 
-parameter is the response function which aquires two parameters the first being the target itself and the second being 
-the child property that was modified. Its return value is used to update the subscribable to which it is chained.
+parameter is the response function which aquires two parameters the first being the target itself and the second being the child 
+property that was modified. Its return value is used to update the subscribable to which it is chained.
 
 For example:
     
@@ -36,8 +36,8 @@ For example:
         }
     }).extend({ throttle: 200 });
     
-The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b> within one line of code.
-The parameter <b>trigger</b> which determines which property has changed is used to ignore changes in <b>this.params.showSearch</b>.
+The code above creates an observable this.data that reacts to changes within this.params within one line of code. 
+The parameter trigger which determines which property has changed is used to ignore changes in this.params.showSearch.
 
 However since only first level subscribables are listened to by default we could achieve the same results like so:
 
@@ -66,7 +66,6 @@ with the ko.computed function.
 
 Finally pausing and resuming our reactor can be done like so:
 
-    this.data.pauseReactor();
+    this.data.pauseWatch();
     //...do work
-    this.data.resumeReactor();
-
+    this.data.resumeWatch();
