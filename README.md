@@ -13,7 +13,7 @@ or
 
 The target parameter supports any subscribable or function/object containing the targeted subscribables. <b>valueEvaluatorFunction</b> is
 the response function which aquires two parameters the first being the target itself and the second being the child property 
-that was modified. Its return value is used to update the subscribable to which it is chained. Note that the parameter <b>options</b>
+that was modified. In the second case the return value is used to update the subscribable to which it is chained. Note that the parameter <b>options</b>
 is optional and can be omitted.
 
 
