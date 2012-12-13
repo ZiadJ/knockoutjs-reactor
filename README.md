@@ -6,11 +6,13 @@ A neater way to add dependencies to any KnockoutJs subscribable.
 <b>Usage:</b>
 
     ko.watch(targetObjectOrFunction, valueEvaluatorFunction);
+    
     ko.watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
 or
 
     this.myProperty = ko.observable().watch(targetObjectOrFunction, valueEvaluatorFunction);
+    
     this.myProperty = ko.observable().watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
 The target parameter supports any subscribable or function/object containing the targeted subscribables. <b>valueEvaluatorFunction</b> is
