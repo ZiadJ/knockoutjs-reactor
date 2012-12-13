@@ -75,7 +75,7 @@ We can also tell the listener to not listen to <b>params.showSearch</b> specific
 And to make several exclusions we can pass them as an array instead.
 
 Unlike the <b>ko.computed</b> function however no listeners are created for subcribables within the evaluator 
-function. So we don't have to concerned about creating unintended triggers anymore.
+function. So we don't have to concerned about creating unintended triggers anymore as the code gets more complex.
 
 Finally pausing and resuming our reactor can be done like so:
 
