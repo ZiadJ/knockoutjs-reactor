@@ -1,7 +1,7 @@
 // Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 0.9
+// Version 0.9.2
 
 ko.watch = function (target, options, callback) {
     /// <summary>
