@@ -66,7 +66,7 @@ To create a fully recursive reactor we can pass in <b>{ recursive: true }</b> as
     
 To limit the recursion to say 2 levels we can pass in <b>{ recurse: 2 }</b> instead.
     
-We can also tell the listener to not listen to <b>params.showSearch</b> specifically as follows:
+We can also tell the listener to not listen to <b>params.showSearch</b> as follows:
 
     this.data = ko.observable().watch(this.params, { exclude: params.showSearch } , function (params, trigger) {
         ...
@@ -74,8 +74,8 @@ We can also tell the listener to not listen to <b>params.showSearch</b> specific
 
 And to make several exclusions we can pass them as an array instead.
 
-Unlike the <b>ko.computed</b> function however no listeners are created for subcribables within the evaluator 
-function. So we don't have to concerned about creating unintended triggers anymore as the code gets more complex.
+Unlike <b>ko.computed</b> however no listeners are created for subcribables within the evaluator function. 
+So we no longer have to concerned about creating unintended triggers as the code gets more complex.
 
 Finally pausing and resuming our reactor can be done like so:
 
