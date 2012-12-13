@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A neater way to watch objects or to add dependencies to any KnockoutJs subscribable.
+A neater way to watch objects and add dependencies to any KnockoutJs subscribable.
 
 <b>Usage:</b>
 
