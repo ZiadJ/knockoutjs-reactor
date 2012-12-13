@@ -64,7 +64,7 @@ To create a fully recursive reactor we can pass in <b>{ recursive: true }</b> as
         ...
     }
     
-To limit the number of recursive levels we can pass in <b>{ recurse: 2 }</b> instead.
+To limit the recursion to say 2 levels we can pass in <b>{ recurse: 2 }</b> instead.
     
 We can also tell the listener to not listen to <b>params.showSearch</b> specifically as follows:
 
