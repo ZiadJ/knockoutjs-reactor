@@ -4,6 +4,7 @@ KO-Reactor
 A neater way to add dependencies to any KnockoutJs subscribable.
 
 <b>Usage:</b>
+
     ko.watch(targetObjectOrFunction, valueEvaluatorFunction);
     ko.watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
