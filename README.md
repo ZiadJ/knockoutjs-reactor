@@ -54,7 +54,7 @@ However since only first level subscribables are listened to by default we could
 
 Or we could use the following instead:
 
-    this.data = ko.observable().watch({ this.params.name(), this.params.surname }, function (params, trigger) {
+    this.data = ko.observable().watch({ this.params.name, this.params.surname }, function (params, trigger) {
         ...
     }
 
