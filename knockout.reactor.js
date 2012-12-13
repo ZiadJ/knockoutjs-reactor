@@ -14,6 +14,7 @@ ko.watch = function (target, options, callback) {
     ///     { recurse: 1 } -> Listen to 1st level children only(default).
     ///     { recurse: 2 } -> Listen to nested children down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested children.
+    ///     { exclude: [...] } -> Property or array of properties to be excluded.
     ///     This parameter is optional.
     /// </param>
     /// <param name="callback" type="function">
@@ -33,6 +34,7 @@ ko.subscribable.fn.watch = function (target, options, valueEvaluatorFunction) {
     ///     { recurse: 1 } -> Listen to 1st level children only(default).
     ///     { recurse: 2 } -> Listen to nested children down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested children.
+    ///     { exclude: [...] } -> Property or array of properties to be excluded.
     ///     This parameter is optional.
     /// </param>
     /// <param name="valueEvaluatorFunction" type="function">
@@ -60,10 +62,8 @@ ko.subscribable.fn.watch = function (target, options, valueEvaluatorFunction) {
         options.targetParent = target;
         watchChildren(target, options.recurse);
     } else {
-        if (options.exclude)
-            for (var i = 0 ; i < options.exclude.length; i++)
-                if (options.exclude[i] == target)
-                    return;
+        if (options.exclude && ko.utils.arrayIndexOf(typeof options.exclude == 'object' ? options.exclude : [options.exclude], target) >= 0)
+            return;
 
         if (ko.isSubscribable(target)) {
             // For performance reasons lets use a subscription instead of a computed when targeting subscribables.
