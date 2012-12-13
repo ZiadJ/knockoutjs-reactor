@@ -54,11 +54,11 @@ However since only first level subscribables are listened to by default we could
 
 Or we could use the following instead:
 
-    this.data = ko.observable().watch({ this.params.name, this.params.surname }, function (params, trigger) {
+    this.data = ko.observable().watch({ 1: this.params.name, 2: this.params.surname }, function (params, trigger) {
         ...
     }
 
-To create a fully recursive reactor we can pass in <b>{ recursive: true }</b> as the options parameter:
+To create a fully recursive reactor we can pass in <b>{ recurse: true }</b> as the options parameter:
 
     this.data = ko.observable().watch(this.params, { recurse: true } , function (params, trigger) {
         ...
