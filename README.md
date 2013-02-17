@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A neater way to watch objects and add dependencies to any KnockoutJs subscribable.
+A neater way to watch objects recursively and/or add dependencies to any KnockoutJs subscribable.
 
 <b>Usage:</b>
 
@@ -11,74 +11,99 @@ or
 
     this.myProperty = ko.observable().watch(targetObjectOrFunction, options, valueEvaluatorFunction);
 
-The target parameter supports any subscribable or function/object containing the targeted subscribables. <b>valueEvaluatorFunction</b> is
-the response function which aquires two parameters the first being the target itself and the second being the child property 
-that was modified. In the second case the return value is used to update the subscribable to which it is chained. 
 
-Note that the parameter <b>options</b> is optional and can be omitted.
+The target ```targetObjectOrFunction``` supports any subscribable or function/object containing the targeted subscribables. 
+```options``` is optional and can be replaced by ```valueEvaluatorFunction``` which is the response function.
+It is called with two parameters the first being the target itself and the second being the child property that was modified.
 
+<b>Basic Example:</b><br/>
+```js
+var params = {
+    p1 = ko.observable(),
+    p2 = ko.observable(),
+    p3 = ko.observable()
+}
+```
+If we'd like to update a variable say ```items``` whenever any of the parameters within ```params``` change we would most
+probably use any of the two samples below:
+```js
+var items = ko.observableArray();               var items = ko.computed(function() {
+ko.computed = function() {                          var p1 = self.params.p1();
+    var p1 = self.params.p1();                      var p2 = self.params.p2();
+    var p2 = self.params.p2();                      var p3 = self.params.p3();
+    var p3 = self.params.p3();                  
+                                                    var newItems = ...;
+    var newItems = ...;                             return newItems;
+    self.items(newItems);                       }
+}                                       
+```
+Using the plugin we no longer need to evaluate each parameter and end up with this:
+```js
+var items = ko.observableArray();               var items = ko.observableArray();                             
+ko.watch(params, function() {                   items.watch(params, function() {    
+    var newItems = ...;                             var newItems = ...;                 
+    self.items(newItems);                           return newItems;                    
+});                                             }); 
+```
+However by taking advantage of the chaining abilities in JS we only need to write this instead:
+```js
+var items = ko.observableArray().watch(params, function() {
+    var newItems = ...;
+    return newItems;    
+});    
+```
+<b>Selective Subscription:</b><br/>
+Note that only first level subscribables are listened to by default. So if we could want to avoid watching say the
+variable ```p3``` we can achieve this by moving it to another level like so:
 
-For example:
-    
-    self = this;
-
-    this.params = {
-        name: ko.observable(),
-        surname: ko.observable(),
-        showSearch: ko.observable()
+    var params = {
+        p1: ko.observable(),
+        p2: ko.observable(),
+        ignored: { 
+            p3: ko.observable() 
+        }
     };
 
-    this.data = ko.observable().watch(this.params, function (params, trigger) {
-        if (trigger != params.showSearch) { // We do not want to react to changes in showSearch.
-            var data = this; // Save context for async use.
-            params = ko.toJS(params); // unwrap observables.
-            var result = getDataFromCache(params); // Read from cache.
-            return result || getDataAsync(params, function (result) { // Set new value if found or read from web service.
-                data(result); // Update value asynchronously(self.data can also be used).
-            });
-        }
-    }).extend({ throttle: 200 });
-    
-The code above creates an observable <b>this.data</b> that reacts to changes within <b>this.params</b> within one line of code. 
-The parameter <b>trigger</b> which determines which property has changed is used to ignore changes in <b>this.params.showSearch</b>.
+We might also pass in a new object made up of ```p1``` and ```p2``` only as shown below:
 
-However since only first level subscribables are listened to by default we could achieve the same results like so:
-
-    this.params = {
-        name: ko.observable(),
-        surname: ko.observable(),
-        show: { 
-            search: ko.observable() 
-        }
-    };
-
-Or we could use the following instead:
-
-    this.data = ko.observable().watch({ 1: this.params.name, 2: this.params.surname }, function (params, trigger) {
+    this.data = ko.observable().watch({ 1: params.p1, 2: params.p2 }, function (params, trigger) {
         ...
     }
 
-To create a fully recursive reactor we can pass in <b>{ recurse: true }</b> as the options parameter:
+Or we could tell the listener to not listen to ```p3``` by using the ```exclude``` option:
+
+    this.data = ko.observable().watch(this.params, { exclude: params.p3 } , function (params, trigger) {
+        ...
+    }
+    
+But the easiest way would be to simply tag ```p3``` as non-watchable like so:
+
+    var params = {
+        p1: ko.observable(),
+        p2: ko.observable(),
+        p3: ko.observable().watch(false) 
+    };
+
+<b>Object Recursion:</b><br/>
+To create a fully recursive reactor we can pass in ```{ recurse: true }``` as the options parameter:
 
     this.data = ko.observable().watch(this.params, { recurse: true } , function (params, trigger) {
         ...
     }
     
-To limit the recursion to say 2 levels we can pass in <b>{ recurse: 2 }</b> instead.
-    
-We can also tell the listener to not listen to <b>params.showSearch</b> as follows:
+To limit the recursion to say 2 levels we can pass in ```{ recurse: 2 }``` instead.
 
-    this.data = ko.observable().watch(this.params, { exclude: params.showSearch } , function (params, trigger) {
-        ...
-    }
-
-And to make several exclusions we can pass them as an array instead.
-
-Unlike <b>ko.computed</b> however no listeners are created for subcribables within the evaluator function. 
-So we no longer have to concerned about creating unintended triggers as the code gets more complex.
-
-Finally pausing and resuming our reactor can be done like so:
+<b>Pausing the listener:</b><br/>
+Pausing and resuming our reactor can be done like so:
 
     this.data.pauseWatch();
     //...do work
     this.data.resumeWatch();
+    
+<br/>
+Note that unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
+So we no longer have to concerned about creating unintended triggers as the code gets more complex.
+
+    
+    
+
