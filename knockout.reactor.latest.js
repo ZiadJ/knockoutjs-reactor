@@ -23,7 +23,7 @@ ko['watch'] = function (target, options, callback) {
     /// </param>
     return ko.observable().watch(target, options, callback);
 }
-    
+
 ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction) {
     /// <summary>
     ///     React to changes in a specific target object or function.
@@ -53,6 +53,16 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
     if (valueEvaluatorFunction == undefined) {
         valueEvaluatorFunction = options;
         options = {};
+        if (typeof target == 'function' && !ko.subscribable(target)) {
+            //valueEvaluatorFunction = target;
+            //ko.dependencyDetection.begin(function (subscribable) {
+            //    var inOld;
+            //    if ((inOld = ko.utils.arrayIndexOf(disposalCandidates, subscribable)) >= 0)
+            //        disposalCandidates[inOld] = undefined; // Don't want to dispose this subscription, as it's still being used
+            //    else
+            //        addSubscriptionToDependency(subscribable); // Brand new subscription - add it
+            //});
+        }
     }
 
     this.isPaused = false;
@@ -67,7 +77,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                 return;
 
             if (ko.isSubscribable(targ)) {
-                if (targ() instanceof Array) {
+                if (Object.prototype.toString.call(targ()) === "[object Array]") {
                     var previousValue;
                     targ.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange');
                     targ.subscribe(function (e) {
@@ -75,11 +85,11 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                         ko.utils.arrayForEach(editScript, function () {
                             switch (this.status) {
                                 case 'deleted':
-                                    // TODO: Deleted items need to be unsubscribed here if KnockoutJS doesn't already do it under the hood.
+                                    // TODO: Unsubscribe deleted items to be on the safe side even if KnockoutJS might already handle it automatically.
                                     valueEvaluatorFunction.call(context, target, targ, 'deleted');
                                     break;
                                 case 'added':
-                                    watchChildren(this.value, recurse === true || Number(recurse) -1);
+                                    watchChildren(this.value, recurse === true || Number(recurse) - 1);
                                     valueEvaluatorFunction.call(context, target, targ, 'added');
                                     break;
                             }
@@ -103,7 +113,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                 for (var property in targ)
                     watchChildren(targ[property], recurse === true || Number(recurse) - 1);
 
-            } else if (targ instanceof Array) {
+            } else if (Object.prototype.toString.call(targ) === "[object Array]") {
                 for (var i = 0; i < targ.length; i++)
                     watchChildren(targ[i], recurse === true || Number(recurse) - 1);
 
