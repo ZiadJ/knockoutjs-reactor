@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A neater way to watch objects recursively and/or add dependencies to any KnockoutJs subscribable.
+A KnockoutJS plugin that adds the ability to watch all observables and child observables within an object in one go. The latest version enables dynamic monitoring of array nested subscribables as well.
 
 <b>Usage:</b>
 
@@ -24,8 +24,7 @@ var params = {
     p3 = ko.observable()
 }
 ```
-If we'd like to update a variable say ```items``` whenever any of the parameters within ```params``` change we would most
-probably use any of the two samples below:
+If we'd like to update a variable say ```items``` whenever any of the parameters within ```params``` change we would most probably use one of the two samples below:
 ```js
 var items = ko.observableArray();               var items = ko.computed(function() {
 ko.computed = function() {                          var p1 = self.params.p1();
@@ -85,16 +84,19 @@ But the easiest way would be to simply tag ```p3``` as non-watchable like so:
     };
 
 <b>Object Recursion:</b><br/>
-To create a fully recursive reactor we can pass in ```{ recurse: true }``` as the options parameter:
+Properties within nested elements are not monitored by default. For instance changes within array elements are ignored because they are nested a level down. For a fully recursive reactor we can pass in ```{ recurse: true }``` as options parameter:
 
     this.data = ko.observable().watch(this.params, { recurse: true } , function (params, trigger) {
         ...
     }
     
-To limit the recursion to say 2 levels we can pass in ```{ recurse: 2 }``` instead.
+Or we can limit the recursion to say 2 levels by passing in ```{ recurse: 2 }```.
+
+<b>Non-Observable Functions:</b><br/>
+The ```{ methods: true }``` option automatically creates subscriptions for functions regardless of whether they are setup as subscribables or not. However to be more specific an array of targeted functions can be passed referentially instead of just ```true```.
 
 <b>Pausing the listener:</b><br/>
-Pausing and resuming our reactor can be done like so:
+Pausing and resuming a reactor can be done like so:
 
     this.data.pauseWatch();
     //...do work
@@ -103,6 +105,8 @@ Pausing and resuming our reactor can be done like so:
 <br/>
 Note that unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
 So we no longer have to concerned about creating unintended triggers as the code gets more complex.
+
+
 
     
     
