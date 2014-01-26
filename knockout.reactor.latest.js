@@ -1,7 +1,9 @@
 // Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.1.0 beta
+// Version 1.1.3 beta
+
+ko.watchedArraySubscriptions = []; // Array used to keep track of subscriptions created within array elements.
 
 ko['watch'] = function (target, options, callback) {
     /// <summary>
@@ -15,6 +17,7 @@ ko['watch'] = function (target, options, callback) {
     ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
     ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested subscribables.
+    ///     { methods: [...] } -> Method or array of methods to be watched, being ignored by default.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
     ///     This parameter is optional.
     /// </param>
@@ -36,6 +39,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
     ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
     ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested subscribables.
+    ///     { methods: [...] } -> Method or array of methods to be watched, being ignored by default.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
     ///     This parameter is optional.
     /// </param>
@@ -53,83 +57,93 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
     if (valueEvaluatorFunction == undefined) {
         valueEvaluatorFunction = options;
         options = {};
-        if (typeof target == 'function' && !ko.subscribable(target)) {
-            //valueEvaluatorFunction = target;
-            //ko.dependencyDetection.begin(function (subscribable) {
-            //    var inOld;
-            //    if ((inOld = ko.utils.arrayIndexOf(disposalCandidates, subscribable)) >= 0)
-            //        disposalCandidates[inOld] = undefined; // Don't want to dispose this subscription, as it's still being used
-            //    else
-            //        addSubscriptionToDependency(subscribable); // Brand new subscription - add it
-            //});
-        }
     }
 
     this.isPaused = false;
     var context = this;
 
-    function watchChildren(targ, recurse) {
+    function watchChildren(child, recurse, keepTrack) {
         if (recurse === true || recurse >= 0) {
 
-            if (options.exclude && typeof options.exclude === 'object'
-                ? ko.utils.arrayIndexOf(options.exclude, targ) >= 0
-                : options.exclude === targ)
+            if (options.exclude
+                && typeof options.exclude === 'object'
+                    ? ko.utils.arrayIndexOf(options.exclude, child) >= 0
+                    : options.exclude === child)
                 return;
 
-            if (ko.isSubscribable(targ)) {
-                if (Object.prototype.toString.call(targ()) === "[object Array]") {
+            if (ko.isSubscribable(child)) {
+                if (Object.prototype.toString.call(child()) === "[object Array]") {
                     var previousValue;
-                    targ.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange');
-                    targ.subscribe(function (e) {
+                    child.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange')
+                    child.subscribe(function (e) {
                         var editScript = ko.utils.compareArrays(previousValue, e);
-                        ko.utils.arrayForEach(editScript, function () {
-                            switch (this.status) {
+                        ko.utils.arrayForEach(editScript, function (item) {
+                            switch (item.status) {
                                 case 'deleted':
-                                    // TODO: Unsubscribe deleted items to be on the safe side even if KnockoutJS might already handle it automatically.
-                                    valueEvaluatorFunction.call(context, target, targ, 'deleted');
+                                    setTimeout(function () {
+                                        watchChildren(item.value, recurse === true || Number(recurse) - 1, false); // Dispose existing child subscriptions if any
+                                    }, 0);
+                                    valueEvaluatorFunction.call(context, child, item.value, 'deleted');
                                     break;
                                 case 'added':
-                                    watchChildren(this.value, recurse === true || Number(recurse) - 1);
-                                    valueEvaluatorFunction.call(context, target, targ, 'added');
+                                    watchChildren(item.value, recurse === true || Number(recurse) - 1, true); // Brand new array item - watch it
+                                    valueEvaluatorFunction.call(context, child, item.value, 'added');
                                     break;
                             }
                         });
                         previousValue = undefined;
                     });
-
-                    watchChildren(targ(), recurse === true || Number(recurse) - 1);
+                    watchChildren(child(), recurse === true || Number(recurse) - 1, keepTrack);
 
                 } else {
-                    targ.subscribe(function (targetValue) {
+                    if (keepTrack === false) {
+                        var subscription = ko.utils.arrayFirst(ko.watchedArraySubscriptions, function (item) {
+                            return item.key === child;
+                        });
+                        if (subscription) {
+                            subscription.value.dispose();
+                            ko.utils.arrayRemoveItem(ko.watchedArraySubscriptions, subscription);
+                        }
+                    } else {
+                        var newSubscription = child.subscribe(function (e) {
+                            if (!context.isPaused) {
+                                var returnValue = valueEvaluatorFunction.call(context, target, child);
+                                if (returnValue !== undefined)
+                                    context(returnValue);
+                            }
+                        });
+                        if (keepTrack === true)
+                            ko.watchedArraySubscriptions.push({ key: child, value: newSubscription });
+                    }
+                }
+
+            } else if (typeof child === 'object') {
+                for (var property in child)
+                    watchChildren(child[property], recurse === true || Number(recurse) - 1, keepTrack);
+
+            } else if (Object.prototype.toString.call(child) === "[object Array]") {
+                for (var i = 0; i < child.length; i++)
+                    watchChildren(child[i], recurse === true || Number(recurse) - 1, keepTrack);
+
+            } else {
+                if (options.methods
+                    && (options.methods === true
+                        || typeof options.methods === 'object'
+                                ? ko.utils.arrayIndexOf(options.methods, child) >= 0
+                                : options.methods === child)) {
+                    ko.computed(function () {
+                        var dummmyValue = child(); // Evaluated for tracking purposes only.
                         if (!context.isPaused) {
-                            var returnValue = valueEvaluatorFunction.call(context, target, targ);
-                            if (returnValue !== undefined)
-                                context(returnValue);
+                            // Bypass change detection for valueEvaluatorFunction during its evaluation.
+                            setTimeout(function () {
+                                returnValue = valueEvaluatorFunction.call(context, target, child);
+                                // Check that a return value exists.
+                                if (returnValue !== undefined && returnValue !== context())
+                                    context(returnValue);
+                            }, 0);
                         }
                     });
                 }
-
-            } else if (typeof targ === 'object') {
-                for (var property in targ)
-                    watchChildren(targ[property], recurse === true || Number(recurse) - 1);
-
-            } else if (Object.prototype.toString.call(targ) === "[object Array]") {
-                for (var i = 0; i < targ.length; i++)
-                    watchChildren(targ[i], recurse === true || Number(recurse) - 1);
-
-            } else {
-                ko.computed(function () {
-                    var targetValue = targ();
-                    if (!context.isPaused) {
-                        // Bypass change detection for valueEvaluatorFunction during its evaluation.
-                        setTimeout(function () {
-                            returnValue = valueEvaluatorFunction.call(context, target, targ);
-                            // Check that a return value exists.
-                            if (returnValue !== undefined && returnValue !== context())
-                                context(returnValue);
-                        }, 0);
-                    }
-                });
             }
         }
     }
