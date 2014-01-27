@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A KnockoutJS plugin that adds the ability to watch all observables and child observables within an object in one go. The latest version enables dynamic monitoring of array nested subscribables as well.
+A KnockoutJS plugin that adds the ability to watch all observables and child observables within an object in one go. The latest version enables dynamic monitoring of array data subscribables as well.
 
 <b>Usage:</b>
 
@@ -38,7 +38,7 @@ ko.computed = function() {                          var p1 = self.params.p1();
 ```
 Using the plugin we no longer need to evaluate each parameter and end up with this:
 ```js
-var items = ko.observableArray();               var items = ko.observableArray();                             
+var items = ko.observableArray();               var items = ko.observableArray();
 ko.watch(params, function() {                   items.watch(params, function() {    
     var newItems = ...;                             var newItems = ...;                 
     self.items(newItems);                           return newItems;                    
@@ -65,13 +65,13 @@ variable ```p3``` we can achieve this by moving it to another level like so:
 
 We might also pass in a new object made up of ```p1``` and ```p2``` only as shown below:
 
-    this.data = ko.observable().watch({ 1: params.p1, 2: params.p2 }, function (params, trigger) {
+    this.data = ko.observable().watch({ 1: params.p1, 2: params.p2 }, function (context, trigger) {
         ...
     }
 
 Or we could tell the listener to not listen to ```p3``` by using the ```exclude``` option:
 
-    this.data = ko.observable().watch(this.params, { exclude: params.p3 } , function (params, trigger) {
+    this.data = ko.observable().watch(this.params, { exclude: params.p3 } , function (context, trigger) {
         ...
     }
     
@@ -83,19 +83,19 @@ But the easiest way would be to simply tag ```p3``` as non-watchable like so:
         p3: ko.observable().watch(false) 
     };
 
-<b>Object Recursion:</b><br/>
-Properties within nested elements are not monitored by default. For instance changes within array elements are ignored because they are nested a level down. For a fully recursive reactor we can pass in ```{ recurse: true }``` as options parameter:
+<b>Watching Arrays:</b><br/>
+To enable deep monitoring of array elements the ```recurse``` parameter has to be set to either true or a value more than one. 
+The third argument ```action```, as illustrated below, is used to determine whether an item has been added or deleted:
 
-    this.data = ko.observable().watch(this.params, { recurse: true } , function (params, trigger) {
-        ...
-    }
+	var items = ko.observableArray();
+	ko.watch(items, { recurse: 3 }, function(context, trigger, action) {
+		...
+	});    
+
     
 Or we can limit the recursion to say 2 levels by passing in ```{ recurse: 2 }```.
 
-<b>Non-Observable Functions:</b><br/>
-The ```{ methods: true }``` option automatically creates subscriptions for functions regardless of whether they are setup as subscribables or not. However to be more specific an array of targeted functions can be passed referentially instead of just ```true```.
-
-<b>Pausing the listener:</b><br/>
+<b>Pausable Listener:</b><br/>
 Pausing and resuming a reactor can be done like so:
 
     this.data.pauseWatch();

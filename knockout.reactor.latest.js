@@ -1,25 +1,23 @@
-// Observer plugin for Knockout http://knockoutjs.com/
+﻿// Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
 // Version 1.1.3 beta
-
-ko.watchedArraySubscriptions = []; // Array used to keep track of subscriptions created within array elements.
 
 ko['watch'] = function (target, options, callback) {
     /// <summary>
     ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
-    ///     The target subscribable or object/function containing subscribables.
-    ///     Note that the value false can be used to prevent a subscribable from being watched.
+    ///     The object/method containing targeted subscribables or the subscribable itself.
+    ///     Note that chaining the watch method to a subscribable with a false value causes
+    ///     the latter to be ignored by eventual listeners.
     /// </param>
     /// <param name="options" type="object">
     ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
     ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested subscribables.
-    ///     { methods: [...] } -> Method or array of methods to be watched, being ignored by default.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
-    ///     This parameter is optional.
+    ///     { excludeMethods: true } -> Ignore all nested methods.
     /// </param>
     /// <param name="callback" type="function">
     ///     The callback function called when changes occur.
@@ -32,16 +30,16 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
     ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
-    ///     The target subscribable or object/function containing the subscribable(s).
-    ///     Note that the value false can be used to prevent a subscribable from being watched.
+    ///     The object/method containing targeted subscribables or the subscribable itself.
+    ///     Note that chaining the watch method to a subscribable with a false value causes
+    ///     the latter to be ignored by eventual listeners.
     /// </param>
     /// <param name="options" type="object">
     ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
     ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
     ///     { recurse: true } -> Listen to all nested subscribables.
-    ///     { methods: [...] } -> Method or array of methods to be watched, being ignored by default.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
-    ///     This parameter is optional.
+    ///     { excludeMethods: true } -> Ignore all nested methods.
     /// </param>
     /// <param name="valueEvaluatorFunction" type="function">
     ///     The evaluator or function used to update the value of the subscribable during changes.
@@ -61,6 +59,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
 
     this.isPaused = false;
     var context = this;
+    var trackedSubscriptions = []; // List of volatile subscriptions particularly occuring in arrays
 
     function watchChildren(child, recurse, keepTrack) {
         if (recurse === true || recurse >= 0) {
@@ -81,7 +80,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                             switch (item.status) {
                                 case 'deleted':
                                     setTimeout(function () {
-                                        watchChildren(item.value, recurse === true || Number(recurse) - 1, false); // Dispose existing child subscriptions if any
+                                        watchChildren(item.value, recurse === true || Number(recurse) - 1, false); // Deleted array item - unwatch it
                                     }, 0);
                                     valueEvaluatorFunction.call(context, child, item.value, 'deleted');
                                     break;
@@ -93,16 +92,16 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                         });
                         previousValue = undefined;
                     });
-                    watchChildren(child(), recurse === true || Number(recurse) - 1, keepTrack);
+                    watchChildren(child(), recurse === true || Number(recurse) - 1, true);
 
                 } else {
                     if (keepTrack === false) {
-                        var subscription = ko.utils.arrayFirst(ko.watchedArraySubscriptions, function (item) {
+                        var subscription = ko.utils.arrayFirst(trackedSubscriptions, function (item) {
                             return item.key === child;
                         });
                         if (subscription) {
                             subscription.value.dispose();
-                            ko.utils.arrayRemoveItem(ko.watchedArraySubscriptions, subscription);
+                            ko.utils.arrayRemoveItem(trackedSubscriptions, subscription);
                         }
                     } else {
                         var newSubscription = child.subscribe(function (e) {
@@ -113,7 +112,7 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                             }
                         });
                         if (keepTrack === true)
-                            ko.watchedArraySubscriptions.push({ key: child, value: newSubscription });
+                            trackedSubscriptions.push({ key: child, value: newSubscription });
                     }
                 }
 
@@ -126,22 +125,21 @@ ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction)
                     watchChildren(child[i], recurse === true || Number(recurse) - 1, keepTrack);
 
             } else {
-                if (options.methods
-                    && (options.methods === true
-                        || typeof options.methods === 'object'
-                                ? ko.utils.arrayIndexOf(options.methods, child) >= 0
-                                : options.methods === child)) {
-                    ko.computed(function () {
-                        var dummmyValue = child(); // Evaluated for tracking purposes only.
-                        if (!context.isPaused) {
-                            // Bypass change detection for valueEvaluatorFunction during its evaluation.
-                            setTimeout(function () {
-                                returnValue = valueEvaluatorFunction.call(context, target, child);
-                                // Check that a return value exists.
-                                if (returnValue !== undefined && returnValue !== context())
-                                    context(returnValue);
-                            }, 0);
+                if (options.excludeMethods !== true) {
+                    ko.computed({
+                        read: function () {
+                            child(); // Evaluated for tracking purposes only.
+                            if (!context.isPaused) {
+                                // Bypass change detection for valueEvaluatorFunction during its evaluation.
+                                setTimeout(function () {
+                                    returnValue = valueEvaluatorFunction.call(context, target, child);
+                                    // Check that a return value exists.
+                                    if (returnValue !== undefined && returnValue !== context())
+                                        context(returnValue);
+                                }, 0);
+                            }
                         }
+                    , deferEvaluation: true
                     });
                 }
             }
