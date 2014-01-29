@@ -1,112 +1,209 @@
 // Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 0.9.2
+// Version 1.1.5 beta
 
-ko['watch'] = function (target, options, callback) {
+ko.subscribable.fn['watch'] = function (target, options, evaluatorCallback, context) {
     /// <summary>
     ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
-    ///     The target subscribable or object/function containing subscribables.
-    ///     Boolean values true and false can also be used set the subscribable as watchable or not.
+    ///     The object/method containing targeted subscribables or the subscribable itself.
+    ///     Note that chaining the watch method to a subscribable with a false value as 
+    ///     argument causes the latter to be ignored by eventual listeners.
     /// </param>
     /// <param name="options" type="object">
-    ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
-    ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
-    ///     { recurse: true } -> Listen to all nested subscribables.
+    ///     { depth: 1 } -> Listen to 1st level subscribables only(default).
+    ///     { depth: 2 } -> Listen to nested subscribables down to the 2nd level.
+    ///     { depth: -1 } -> Listen to all nested subscribables.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
-    ///     This parameter is optional.
+    ///     { excludeMethods: true } -> Ignore all nested methods.
+    ///     { excludeArrays: true } -> Ignore all nested methods.
+    ///     { excludeObjects: true } -> Ignore all nested methods.
+    ///     { beforeSubscribe: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.
+    ///     { makeObservable: true } -> Makes sure all fields are made into observables. A callback function can be used instead.
+    ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.
+    ///     { fieldNames: true } -> Inject the field name into each parent under the property '__fieldNames' for easy identification.
+    ///     { fieldNames: 'SomeName' } -> Inject the field name into each parent under the property 'SomeName' for easy identification.
     /// </param>
     /// <param name="callback" type="function">
     ///     The callback function called when changes occur.
     /// </param>
-    return ko.observable().watch(target, options, callback);
+
+    ko.watch(target, options, evaluatorCallback, this);
+
+    return this;
 }
 
-ko.subscribable.fn['watch'] = function (target, options, valueEvaluatorFunction) {
+ko['watch'] = function (target, options, evaluatorCallback, context) {
     /// <summary>
     ///     React to changes in a specific target object or function.
     /// </summary>
     /// <param name="target">
-    ///     The target subscribable or object/function containing the subscribable(s).
-    ///     Boolean values true and false can also be used set the subscribable as watchable or not.
+    ///     The object/method containing targeted subscribables or the subscribable itself.
+    ///     Note that chaining the watch method to a subscribable with a false value as 
+    ///     argument causes the latter to be ignored by eventual listeners.
     /// </param>
     /// <param name="options" type="object">
-    ///     { recurse: 1 } -> Listen to 1st level subscribables only(default).
-    ///     { recurse: 2 } -> Listen to nested subscribables down to the 2nd level.
-    ///     { recurse: true } -> Listen to all nested subscribables.
+    ///     { depth: 1 } -> Listen to 1st level subscribables only(default).
+    ///     { depth: 2 } -> Listen to nested subscribables down to the 2nd level.
+    ///     { depth: -1 } -> Listen to all nested subscribables.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
-    ///     This parameter is optional.
+    ///     { excludeMethods: true } -> Ignore all nested methods.
+    ///     { excludeArrays: true } -> Ignore all nested methods.
+    ///     { excludeObjects: true } -> Ignore all nested methods.
+    ///     { beforeSubscribe: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.
+    ///     { makeObservable: true } -> Makes sure all fields are made into observables. A callback function can be used instead.
+    ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.
+    ///     { fieldNames: true } -> Inject the field name into each parent under the property '__fieldNames' for easy identification.
+    ///     { fieldNames: 'SomeName' } -> Inject the field name into each parent under the property 'SomeName' for easy identification.
     /// </param>
-    /// <param name="valueEvaluatorFunction" type="function">
+    /// <param name="evaluatorCallback" type="function">
     ///     The evaluator or function used to update the value of the subscribable during changes.
     /// </param>
 
-    // Setting the target as false prevents the subscribable from being watched.
+    // Setting the target as false prevents it from being watched later on.
     if (target === false || target === true)
         target.watchable = target;
 
     if (target.watchable === false)
         return;
 
-    if (valueEvaluatorFunction == undefined) {
-        valueEvaluatorFunction = options;
+    if (evaluatorCallback == undefined || typeof evaluatorCallback === 'object') {
+        context = evaluatorCallback;
+        evaluatorCallback = options;
         options = {};
     }
 
-    this.isPaused = false;
-    var context = this;
+    var fieldNames = options.fieldNames === true ? '__fieldName' : options.fieldNames;
 
-    if (typeof target == "object") {
-        function watchChildren(object, recurse) {
-            // Listen to all first level subscribables within specified object.
-            for (var property in object) {
-                if (recurse && (recurse === true || recurse >= 0) && typeof target[property] == 'object')
-                    watchChildren(object[property], recurse === true || Number(recurse) - 1);
-                else if (ko.isSubscribable(object[property]))
-                    context.watch(object[property], options, valueEvaluatorFunction);
+    // List of subscriptions nested within arrays that are not automatically disposed of by KnockoutJs.
+    var volatileSubscriptions = [];
+
+    var context = context || this;
+
+    function watchChildren(child, parent, rootParents, keepTrack, notInParentList) {
+
+        // rootParents being passed by reference lets make a new private array from it.
+        var parents = [];
+        if (rootParents)
+            parents = parents.concat(rootParents);
+        if (parent)
+            parents.push(parent);
+
+        if (options.depth === -1 || parents.length <= (options.depth === undefined ? 1 : options.depth)) {
+
+            if (parents.indexOf(child) > -1)
+                return;
+
+            if (options.exclude
+                && typeof options.exclude === 'object'
+                    ? ko.utils.arrayIndexOf(options.exclude, child) >= 0
+                    : options.exclude === child)
+                return;
+
+            var isSubscribable = ko.isSubscribable(child),
+                childType = Object.prototype.toString.call(isSubscribable ? child() : child);
+
+            if (isSubscribable) {
+                if (options.beforeSubscribe && options.beforeSubscribe.call(context, parents, child) === false)
+                    return;
+
+                if (childType === '[object Array]') {
+                    var previousValue;
+                    child.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange')
+                    child.subscribe(function (e) {
+                        if (child.watchEnabled !== false) {
+                            var editScript = ko.utils.compareArrays(previousValue, e);
+                            ko.utils.arrayForEach(editScript, function (item) {
+                                if (item.status === 'deleted' || item.status === 'added') {
+                                    // Brand new or deleted array item.
+                                    var returnValue = evaluatorCallback.call(context, parents, child, item);
+                                    if (returnValue !== undefined)
+                                        context(returnValue);
+
+                                    // Watch or unwatch it.
+                                    setTimeout(function () {
+                                        watchChildren(item.value, notInParentList ? null : child, parents, item.status === 'added');
+                                    }, 0);
+                                }
+                            });
+                            previousValue = undefined;
+                        }
+                    });
+
+                    watchChildren(child(), notInParentList ? null : child, parents, true, true);
+
+                } else {
+                    if (keepTrack === false) {
+                        var subscription = ko.utils.arrayFirst(volatileSubscriptions, function (item) {
+                            return item.key === child;
+                        });
+                        if (subscription) {
+                            subscription.value.dispose();
+                            ko.utils.arrayRemoveItem(volatileSubscriptions, subscription);
+                        }
+                    } else {
+                        var newSubscription = child.subscribe(function (e) {
+                            if (child.watchEnabled !== false) {
+                                var returnValue = evaluatorCallback.call(context, parents, child);
+                                if (returnValue !== undefined)
+                                    context(returnValue);
+                            }
+                        });
+                        if (keepTrack === true)
+                            volatileSubscriptions.push({ key: child, value: newSubscription });
+                    }
+                }
+            } else if (childType === '[object Object]') {
+                for (var property in child) {
+                    var sub = child[property];
+                    if (sub) {
+                        var simpleType = watchChildren(sub, notInParentList ? null : child, parents, keepTrack);
+
+                        // Whenever the makeObservable option is set to true or has a callback value
+                        // and contains a simple value or array turn the field into an observable.
+                        if (simpleType && options.makeObservable) {
+                            if (options.makeObservable === true || options.makeObservable.call(context, parents, child, sub) !== false) {
+                                child[property] = simpleType === '[object Array]'
+                                    ? ko.observableArray(sub)
+                                    : ko.observable(sub);
+                            }
+
+                            watchChildren(child[property], notInParentList ? null : child, parents, keepTrack);
+                        }
+
+                        if (fieldNames)
+                            child[property][fieldNames] = property;
+                    }
+                }
+            } else if (childType === '[object Array]' && options.excludeArrays !== true) {
+                for (var i = 0; i < child.length; i++)
+                    watchChildren(child[i], notInParentList ? null : child, parents, keepTrack);
+
+            } else if (childType === '[object Function]' && options.excludeMethods !== true) {
+                ko.computed({
+                    read: function () {
+                        child(); // Evaluated for tracking purposes only.
+                        if (child.watchEnabled !== false) {
+                            // Bypass change detection for evaluatorCallback during its evaluation.
+                            setTimeout(function () {
+                                returnValue = evaluatorCallback.call(context, parents, child);
+                                // Check that a return value exists.
+                                if (returnValue !== undefined && returnValue !== context())
+                                    context(returnValue);
+                            }, 0);
+                        }
+                    }
+                , deferEvaluation: true
+                });
             }
-        }
-        options.targetParent = target;
-        watchChildren(target, options.recurse);
-    } else {
-        if (options.exclude && typeof options.exclude == 'object'
-            ? ko.utils.arrayIndexOf(options.exclude, target) >= 0
-            : options.exclude === target)
-            return;
 
-        // For performance reasons lets use a subscription instead of a computed whenever possible.
-        if (ko.isSubscribable(target)) {
-            target.subscribe(function (targetValue) {
-                if (!context.isPaused) {
-                    var returnValue = valueEvaluatorFunction.call(context, options.targetParent || target, target);
-                    if (returnValue !== undefined)
-                        context(returnValue);
-                }
-            });
-        } else {
-            ko.computed(function () {
-                var targetValue = target();
-                if (!context.isPaused) {
-                    // Bypass change detection for valueEvaluatorFunction during its evaluation.
-                    setTimeout(function () {
-                        returnValue = valueEvaluatorFunction.call(context, options.targetParent || target, target);
-                        // Check that a return value exists.
-                        if (returnValue !== undefined && returnValue !== context())
-                            context(returnValue);
-                    }, 0);
-                }
-            });
+            return childType;
         }
     }
 
-    this.pauseWatch = function () {
-        context.isPaused = true;
-    }
-    this.resumeWatch = function () {
-        context.isPaused = false;
-    }
+    watchChildren(target);
 
-    return this;
+    return context;
 }
