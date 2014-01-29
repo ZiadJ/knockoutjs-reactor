@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A KnockoutJS plugin that adds the ability to watch all observables and child observables within an object in one go. The latest version enables dynamic monitoring of array data subscribables as well.
+A KnockoutJS plugin that adds the ability to track changes to a view model recursively and interact with the changes as they occur.
 
 <b>Usage:</b>
 
@@ -9,32 +9,33 @@ A KnockoutJS plugin that adds the ability to watch all observables and child obs
 
 or
 
-    this.myProperty = ko.observable().watch(targetObjectOrFunction, options, evaluatorCallback, context);
+    var someProperty = ko.observable().watch(targetObjectOrFunction, options, evaluatorCallback, context);
 
 
-The target ```targetObjectOrFunction``` supports any subscribable or function/object containing the targeted subscribables. 
-```options``` is optional and can be replaced by ```evaluatorCallback``` which is the response function.
+```targetObjectOrFunction``` accepts any subscribable or function/object containing the targeted subscribables.<br/>
+```options``` is only optional and can be replaced by ```evaluatorCallback``` the response and evaluation function.
 
 <b>Deep Watching:</b><br/>
-KO-Reactor can centrally monitor all CRUD operations on the object graph for the view model no exception made. A new subscription is
-created when an array element is created which is then automatically disposed after the item is removed.
-To enable it set the ```depth``` option to a value of more than one or -1 if no depth limit is required shown below:
+KO-Reactor can centrally track all CRUD operations on an object graph no exception made. Subscriptions are 
+auto generated for nested observables when new array items are added which are then automatically disposed when the items are removed.
+
+The ```depth``` option determines how deep we want the watch process to go. The default value 1 limits it to a flat view model but we can use a value of -1 to make it fully recursive as seen below:
 
 	var viewModel = { ... };
 	ko.watch(viewModel, { depth: -1 }, function(parents, child, item) {
 		...
-	});    
+	});
 	
-The callback provides three arguments:
-1. ```parents```: A list of all parents above the changed property.
-2. ```child```: The child property that was changed.
+The callback function provides three arguments:<br/>
+1. ```parents```: A list of all parents above the changed property.<br/>
+2. ```child```: The child property that was changed.<br/>
 3. ```item```: Used to determine whether an item has been added or deleted to an array.
 
-<b>No Observables Required:</b>
-Even a view model with no observables assigned to it can be watch right away. By simply setting the ```makeObservable``` 
-option to ```true``` the watcher will ensure that all fields are turned into observables while being launched.
+<b>Plain Object Support:</b><br/>
+Plain view models can be processed right away even if they don't contain any observables initially. When the ```makeObservable``` option is set to ```true``` the watcher will make sure that all fields are replaced by their observable counterparts during initialization.
 
-<b>Chaining:</b><br/>
+<b>Chaining It:</b><br/>
+The support for chaining enables some new scenarios. First let's consider this simple view model:
 ```js
 var params = {
     p1 = ko.observable(),
@@ -42,8 +43,8 @@ var params = {
     p3 = ko.observable()
 }
 ```
-The support for chaining enables some new scenarios. Let's say we'd like to update a variable say ```items``` whenever any of the parameters 
-within ```params``` change we would most probably use one of the two samples below:
+If we want to update a variable say ```items``` whenever any of the parameters 
+within ```params``` change we would most probably write something along those lines:
 ```js
 var items = ko.observableArray();               var items = ko.computed(function() {
 ko.computed = function() {                          var p1 = self.params.p1();
@@ -55,7 +56,7 @@ ko.computed = function() {                          var p1 = self.params.p1();
     self.items(newItems);                       }
 }                                       
 ```
-Using the plugin we no longer need to evaluate each parameter and end up with this:
+However using the plugin we can simply watch ```params``` as a whole and update  ```items``` by any of those methods:
 ```js
 var items = ko.observableArray();               var items = ko.observableArray();
 ko.watch(params, function() {                   items.watch(params, function() {    
@@ -63,44 +64,56 @@ ko.watch(params, function() {                   items.watch(params, function() {
     self.items(newItems);                           return newItems;                    
 });                                             }); 
 ```
-However by taking advantage of the chaining abilities we only need to write this instead:
+But once we've chained it together we end up with a minimal version finally making it obvious that the value of ```items``` depends on ```params```:
 ```js
 var items = ko.observableArray().watch(params, function() {
     var newItems = ...;
     return newItems;    
 });    
 ```
+
 <b>Selective Subscription:</b><br/>
-Note that only first level subscribables are listened to by default. So if we could want to avoid watching say the
-variable ```p3``` we can achieve this by moving it to another level like so:
+What if we'd want to avoid watching say the variable ```p3```? 
+To achieve this we might want to move ```p3``` to another level like so since only top level subscribables are listened to by default:
 
     var params = {
         p1: ko.observable(),
         p2: ko.observable(),
-        ignored: { 
+        ignored: {
             p3: ko.observable() 
         }
     };
 
-We might also pass in a new object made up of ```p1``` and ```p2``` only as shown below:
+Alternatively we can pass in a new object made up of ```p1``` and ```p2``` only as shown below:
 
-    this.data = ko.observable().watch({ 1: params.p1, 2: params.p2 }, function (context, trigger) {
+    ko.watch({ 1: params.p1, 2: params.p2 }, function (parents, child, item) {
         ...
     }
 
-Or we could tell the listener to not listen to ```p3``` by using the ```exclude``` option:
+Or we can just tell the listener to not listen to ```p3``` by using the ```exclude``` option:
 
-    this.data = ko.observable().watch(this.params, { exclude: params.p3 } , function (context, trigger) {
+    ko.watch(this.params, { exclude: params.p3 }, function (parents, child, item) {
         ...
     }
-    
-But the easiest way would be to simply tag ```p3``` as non-watchable like so:
+
+But the easiest way is to simply tag ```p3``` as non-watchable on the view model:
 
     var params = {
         p1: ko.observable(),
         p2: ko.observable(),
         p3: ko.observable().watch(false) 
     };
+
+For more advanced cases however we can make use of the ```beforeSubscribe``` option like so:
+
+    ko.watch(this.params, {
+        beforeSubscribe: function (parents, child) {
+            if (<some condition not to subscribe>)
+                return false; // cancel subscription
+        }
+    }, function (parents, child, item) {
+		...
+    });
 
 <b>Pausable Listener:</b><br/>
 Pausing and resuming a reactor on any property can be done like so:
@@ -110,10 +123,9 @@ Pausing and resuming a reactor on any property can be done like so:
     this.data.watchEnabled = true;
     
 <br/>
-<br/>
 Unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
 So we no longer have to concerned about creating unintended triggers as the code gets more complex.
 
-Please refer to the source code for a full list of available options.
+Please refer to the ```param``` section of the source code for a full list of available options.
 
 
