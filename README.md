@@ -9,7 +9,7 @@ A KnockoutJS plugin that adds the ability to track changes to a view model recur
 
 or
 
-    var someProperty = ko.observable().watch(targetObjectOrFunction, options, evaluatorCallback, context);
+    var property = ko.observable().watch(targetObjectOrFunction, options, evaluatorCallback, context);
 
 
 ```targetObjectOrFunction``` accepts any subscribable or function/object containing the targeted subscribables.<br/>
@@ -73,7 +73,7 @@ var items = ko.observableArray().watch(params, function() {
 ```
 
 <b>Selective Subscription:</b><br/>
-What if we'd want to avoid watching say the variable ```p3```? 
+What if we want to avoid watching say the variable ```p3```? 
 To achieve this we might want to move ```p3``` to another level like so since only top level subscribables are listened to by default:
 
     var params = {

@@ -1,7 +1,7 @@
-// Observer plugin for Knockout http://knockoutjs.com/
+﻿// Observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.1.5 beta
+// Version 1.1.6 beta
 
 ko.subscribable.fn['watch'] = function (target, options, evaluatorCallback, context) {
     /// <summary>
@@ -18,8 +18,7 @@ ko.subscribable.fn['watch'] = function (target, options, evaluatorCallback, cont
     ///     { depth: -1 } -> Listen to all nested subscribables.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
     ///     { excludeMethods: true } -> Ignore all nested methods.
-    ///     { excludeArrays: true } -> Ignore all nested methods.
-    ///     { excludeObjects: true } -> Ignore all nested methods.
+    ///     { excludeArrays: true } -> Ignore all nested arrays.
     ///     { beforeSubscribe: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.
     ///     { makeObservable: true } -> Makes sure all fields are made into observables. A callback function can be used instead.
     ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.
@@ -50,8 +49,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { depth: -1 } -> Listen to all nested subscribables.
     ///     { exclude: [...] } -> Property or array of properties to be ignored.
     ///     { excludeMethods: true } -> Ignore all nested methods.
-    ///     { excludeArrays: true } -> Ignore all nested methods.
-    ///     { excludeObjects: true } -> Ignore all nested methods.
+    ///     { excludeArrays: true } -> Ignore all nested arrays.
     ///     { beforeSubscribe: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.
     ///     { makeObservable: true } -> Makes sure all fields are made into observables. A callback function can be used instead.
     ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.
@@ -69,7 +67,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     if (target.watchable === false)
         return;
 
-    if (evaluatorCallback == undefined || typeof evaluatorCallback === 'object') {
+    if (typeof evaluatorCallback !== 'function') {
         context = evaluatorCallback;
         evaluatorCallback = options;
         options = {};
@@ -82,17 +80,14 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
     var context = context || this;
 
-    function watchChildren(child, parent, rootParents, keepTrack, notInParentList) {
+    function watchChildren(child, parent, grandParents, keepTrack, notInParentList) {
 
-        // rootParents being passed by reference lets make a new private array from it.
-        var parents = [];
-        if (rootParents)
-            parents = parents.concat(rootParents);
-        if (parent)
-            parents.push(parent);
+        // grandParents being passed by reference let's make a new private array for the parent & grandparents.
+        var parents = [].concat(grandParents ? grandParents : [], parent ? parent : []);
 
         if (options.depth === -1 || parents.length <= (options.depth === undefined ? 1 : options.depth)) {
 
+            // Prevent circular referencing.
             if (parents.indexOf(child) > -1)
                 return;
 
@@ -106,77 +101,78 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                 childType = Object.prototype.toString.call(isSubscribable ? child() : child);
 
             if (isSubscribable) {
-                if (options.beforeSubscribe && options.beforeSubscribe.call(context, parents, child) === false)
-                    return;
-
-                if (childType === '[object Array]') {
-                    var previousValue;
-                    child.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange')
-                    child.subscribe(function (e) {
-                        if (child.watchEnabled !== false) {
-                            var editScript = ko.utils.compareArrays(previousValue, e);
-                            ko.utils.arrayForEach(editScript, function (item) {
-                                if (item.status === 'deleted' || item.status === 'added') {
-                                    // Brand new or deleted array item.
-                                    var returnValue = evaluatorCallback.call(context, parents, child, item);
-                                    if (returnValue !== undefined)
-                                        context(returnValue);
-
-                                    // Watch or unwatch it.
-                                    setTimeout(function () {
-                                        watchChildren(item.value, notInParentList ? null : child, parents, item.status === 'added');
-                                    }, 0);
-                                }
-                            });
-                            previousValue = undefined;
-                        }
-                    });
-
-                    watchChildren(child(), notInParentList ? null : child, parents, true, true);
-
-                } else {
-                    if (keepTrack === false) {
-                        var subscription = ko.utils.arrayFirst(volatileSubscriptions, function (item) {
-                            return item.key === child;
-                        });
-                        if (subscription) {
-                            subscription.value.dispose();
-                            ko.utils.arrayRemoveItem(volatileSubscriptions, subscription);
-                        }
-                    } else {
-                        var newSubscription = child.subscribe(function (e) {
+                if (keepTrack === false || !options.beforeSubscribe || options.beforeSubscribe.call(context, parents, child) !== false) {
+                    if (childType === '[object Array]') {
+                        var previousValue;
+                        child.subscribe(function (e) { previousValue = e.slice(0); }, undefined, 'beforeChange')
+                        child.subscribe(function (e) {
                             if (child.watchEnabled !== false) {
-                                var returnValue = evaluatorCallback.call(context, parents, child);
-                                if (returnValue !== undefined)
-                                    context(returnValue);
+                                var editScript = ko.utils.compareArrays(previousValue, e);
+                                ko.utils.arrayForEach(editScript, function (item) {
+                                    if (item.status === 'deleted' || item.status === 'added') {
+                                        // Brand new or deleted array item.
+                                        var returnValue = evaluatorCallback.call(context, parents, child, item);
+                                        if (returnValue !== undefined)
+                                            context(returnValue);
+
+                                        // Watch or unwatch it.
+                                        setTimeout(function () {
+                                            watchChildren(item.value, notInParentList ? null : child, parents, item.status === 'added');
+                                        }, 0);
+                                    }
+                                });
+                                previousValue = undefined;
                             }
                         });
-                        if (keepTrack === true)
-                            volatileSubscriptions.push({ key: child, value: newSubscription });
+                        watchChildren(child(), notInParentList ? null : child, parents, true, true);
+                    } else {
+                        if (keepTrack === false) {
+                            // Remove subscription.
+                            var subscription = ko.utils.arrayFirst(volatileSubscriptions, function (item) {
+                                return item.key === child;
+                            });
+                            if (subscription) {
+                                subscription.value.dispose();
+                                ko.utils.arrayRemoveItem(volatileSubscriptions, subscription);
+                            }
+                        } else {
+                            // Add subscription.
+                            var newSubscription = child.subscribe(function (e) {
+                                if (child.watchEnabled !== false) {
+                                    var returnValue = evaluatorCallback.call(context, parents, child);
+                                    if (returnValue !== undefined)
+                                        context(returnValue);
+                                }
+                            });
+                            if (keepTrack === true)
+                                volatileSubscriptions.push({ key: child, value: newSubscription });
+                        }
                     }
                 }
+
             } else if (childType === '[object Object]') {
                 for (var property in child) {
                     var sub = child[property];
                     if (sub) {
-                        var simpleType = watchChildren(sub, notInParentList ? null : child, parents, keepTrack);
-
-                        // Whenever the makeObservable option is set to true or has a callback value
-                        // and contains a simple value or array turn the field into an observable.
-                        if (simpleType && options.makeObservable) {
-                            if (options.makeObservable === true || options.makeObservable.call(context, parents, child, sub) !== false) {
-                                child[property] = simpleType === '[object Array]'
-                                    ? ko.observableArray(sub)
-                                    : ko.observable(sub);
+                        if (options.makeObservable) {
+                            // Make sure values and arrays are turned into observables.
+                            var type = Object.prototype.toString.call(sub);
+                            if (type !== '[object Function]' && type !== '[object Object]') {
+                                if (options.makeObservable === true || options.makeObservable.call(context, parents, child, sub) !== false) {
+                                    sub = child[property] = type === '[object Array]'
+                                          ? ko.observableArray(sub)
+                                          : ko.observable(sub);
+                                }
                             }
-
-                            watchChildren(child[property], notInParentList ? null : child, parents, keepTrack);
                         }
 
+                        watchChildren(sub, notInParentList ? null : child, parents, keepTrack);
+
                         if (fieldNames)
-                            child[property][fieldNames] = property;
+                            sub[fieldNames] = property;
                     }
                 }
+
             } else if (childType === '[object Array]' && options.excludeArrays !== true) {
                 for (var i = 0; i < child.length; i++)
                     watchChildren(child[i], notInParentList ? null : child, parents, keepTrack);
@@ -186,10 +182,10 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                     read: function () {
                         child(); // Evaluated for tracking purposes only.
                         if (child.watchEnabled !== false) {
-                            // Bypass change detection for evaluatorCallback during its evaluation.
+                            // Use setTimeout to bypass change detection for evaluatorCallback value.
                             setTimeout(function () {
                                 returnValue = evaluatorCallback.call(context, parents, child);
-                                // Check that a return value exists.
+                                // Check that a return value exists then assign it to the context.
                                 if (returnValue !== undefined && returnValue !== context())
                                     context(returnValue);
                             }, 0);
@@ -198,8 +194,6 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                 , deferEvaluation: true
                 });
             }
-
-            return childType;
         }
     }
 
