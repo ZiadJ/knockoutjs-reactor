@@ -23,6 +23,7 @@ ko.subscribable.fn['watch'] = function (target, options, evaluatorCallback, cont
     ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.<br/>
     ///     { tagParents: true } -> Tag each parent with their name under the property '__fieldName' for identification purposes.<br/>
     ///     { tagParents: 'SomePropertyName' } -> Tag each parent their name under the property 'SomePropertyName' for identification purposes.<br/>
+    ///     { history: 3 } -> Keep the last three values under the property 'previousValues' of each subscribable before they are updated.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
     ///     The  callback function called during changes. Any return value is assigned to the target.
@@ -60,6 +61,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { makeObservable: function(parents, field, value) {...} } -> Function called prior to making a value an observable. Returning false leaves it as such.<br/>
     ///     { tagParents: true } -> Tag each parent with their name under the property '__fieldName' for identification purposes.<br/>
     ///     { tagParents: 'SomePropertyName' } -> Tag each parent their name under the property 'SomePropertyName' for identification purposes.<br/>
+    ///     { history: 3 } -> Keep the last three values under the property 'previousValues' of each subscribable before they are updated.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
     ///     The callback function called during changes.
@@ -128,13 +130,28 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                     } else {
                         if (keepTrack === false) {
                             // Remove subscription.
-                            ko.utils.arrayForEach(child._subscriptions.change, function (subscription) {
-                                subscription.dispose();
-                            });
+                            ko.utils.arrayForEach(child._subscriptions.change.concat(options.history ? child._subscriptions.beforeChange : []),
+                                function (subscription) {
+                                    subscription.dispose();
+                                });
+
+                            watchChildren(child(), (notInParentList ? null : child), parents, false, true)
                         } else {
                             // Add subscription if it's not just being re-enabled.
                             if (options.enabled === true && child.watchEnabled === false)
                                 return;
+
+                            if (options.history > 0) {
+                                // Add old value to history list before each update.
+                                child.subscribe(function (oldValue) {
+                                    var values = (child.previousValues
+                                        ? child.previousValues
+                                        : child.previousValues = []);
+                                    values.push(oldValue);
+                                    while (values.length > options.history)
+                                        values.splice(0, 1);
+                                }, null, 'beforeChange');
+                            }
 
                             child.subscribe(function () {
                                 if (child.watchEnabled !== false) {
@@ -143,30 +160,33 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                         context(returnValue);
                                 }
                             }, undefined, 'change');
+
+                            watchChildren(child(), (notInParentList ? null : child), parents);
                         }
                     }
                 }
 
             } else if (childType === '[object Object]') {
                 ko.utils.objectForEach(child, function (property, sub) {
-                    if (options.makeObservable) {
-                        // Turn simple objects and arrays into observables.
-                        var type = Object.prototype.toString.call(sub);
-                        if (type !== '[object Function]' && type !== '[object Object]') {
-                            if (options.makeObservable === true || options.makeObservable.call(context, parents, child, sub) !== false) {
-                                sub = child[property] = type === '[object Array]'
-                                    ? ko.observableArray(sub)
-                                    : ko.observable(sub);
+                    if (sub) {
+                        if (options.makeObservable) {
+                            // Turn simple objects and arrays into observables.
+                            var type = Object.prototype.toString.call(sub);
+                            if (type !== '[object Function]' && type !== '[object Object]') {
+                                if (options.makeObservable === true || options.makeObservable.call(context, parents, child, sub) !== false) {
+                                    sub = child[property] = type === '[object Array]'
+                                        ? ko.observableArray(sub)
+                                        : ko.observable(sub);
+                                }
                             }
                         }
+
+                        var isParent = watchChildren(sub, (notInParentList ? null : child), parents, keepTrack);
+
+                        if (isParent && tagName)
+                            sub[tagName] = property;
                     }
-
-                    var isParent = watchChildren(sub, (notInParentList ? null : child), parents, keepTrack);
-
-                    if (isParent && tagName)
-                        sub[tagName] = property;
                 });
-
                 return true;
 
             } else if (childType === '[object Array]' && options.excludeArrays !== true) {
@@ -179,7 +199,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     }
 
     if (typeof target === 'function' && !ko.isSubscribable(target)) {
-        // Target is a function - track it via computed.
+        // Target is a function - track it using computed.
         ko.computed(function () {
             target(); // Evaluated for tracking purposes only.
             if (target.watchEnabled !== false) {
