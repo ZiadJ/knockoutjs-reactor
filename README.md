@@ -122,7 +122,7 @@ Pausing and resuming a reactor on any property can be done like so:
     //...do work
     this.data.watchEnabled = true;f
     
-<b>Further Notes:<b/>
+<b>Further Notes:</b><br/>
 Unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
 So we no longer have to concerned about creating unintended triggers as the code gets more complex.
 
