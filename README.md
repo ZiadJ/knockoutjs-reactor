@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A KnockoutJS plugin that adds the ability to track changes to a view model recursively and interact with the changes as they occur.
+A KnockoutJS plugin that adds the ability to track changes to a view model recursively and process the changes as they occur. The latest version largely improves performance with large arrays but requires Knockout v3.0.
 
 <b>Usage:</b>
 
@@ -32,7 +32,7 @@ The callback function provides three arguments:<br/>
 3. ```item```: Used to determine whether an item has been added or deleted to an array.
 
 <b>Plain Object Support:</b><br/>
-Plain view models can be processed right away even if they don't contain any observables initially. When the ```makeObservable``` option is set to ```true``` the watcher will make sure that all fields are replaced by their observable counterparts during initialization.
+Plain view models can be processed right away even if they don't contain any observables initially. When the ```makeObservable``` option is set to ```true``` the watcher will make sure that all fields are replaced by their observable counterparts during initialization and when array items are created.
 
 <b>Chaining It:</b><br/>
 The support for chaining enables some new scenarios. First let's consider this simple view model:
@@ -120,12 +120,12 @@ Pausing and resuming a reactor on any property can be done like so:
 
     this.data.watchEnabled = false;
     //...do work
-    this.data.watchEnabled = true;
+    this.data.watchEnabled = true;f
     
-<br/>
+<b>Further Notes:<b/>
 Unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
 So we no longer have to concerned about creating unintended triggers as the code gets more complex.
 
-Please refer to the ```param``` section of the source code for a full list of available options.
+Please refer to the ```param``` sections of the source code for a full list of available options.
 
 
