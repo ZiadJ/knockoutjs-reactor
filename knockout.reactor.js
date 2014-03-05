@@ -1,22 +1,21 @@
 ﻿// Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.1.9 beta
+// Version 1.2.0 beta
 
-ko.subscribable.fn['watch'] = function (options, evaluatorCallback, context) {
+ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, evaluatorCallback) {
     /// <summary>
     ///     Track and manage changes within the chained observable down to any given level. 
     /// </summary>
     /// <param name="options" type="object">
     ///     false -> Disables tracking on the chained observable.
-    ///     { depth: 1 } -> Track 1st level subscribables only(default).<br/>
-    ///     { depth: 2 } -> Track all nested subscribables down to the 2nd level.<br/>
+    ///     { depth: 2 } -> Track all nested subscribables down to the 2nd level(default is 1).<br/>
     ///     { depth: -1 } -> Track all nested subscribables.<br/>
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
-    ///     { hideWrappedValues: true } -> Ignore observables wrapped under a parent observable.<br/>
+    ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
-    ///     { wrap: true } -> Makes sure all fields are wrapped as observables.<br/>
+    ///     { wrap: true } -> Makes sure all fields are wrapped into observables. This happens on the fly for new array items.<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as such.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy idenfication.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
@@ -25,11 +24,17 @@ ko.subscribable.fn['watch'] = function (options, evaluatorCallback, context) {
     ///     The  callback function called during changes. Any return value is assigned to the chained observable.
     /// </param>
 
-    // Setting the target as false prevents it from being watched later on.
-    if (options === false || options === true)
-        options = { enabled: options };
-
-    ko.watch(this, options, evaluatorCallback, context);
+    var targetType = typeof targetOrEvaluatorCallback;
+        
+    if (targetType === 'boolean') {
+        // Setting the target as false prevents it from being watched later on.
+        ko.watch(context || this, { enabled: targetOrEvaluatorCallback });
+    } else if (targetType === 'function' && !ko.isSubscribable(targetOrEvaluatorCallback) ) {
+        // When no target subscribable or object is provided the chained subscribable itself becomes the target.
+        ko.watch(this, options || {}, targetOrEvaluatorCallback);
+    } else {
+        ko.watch(targetOrEvaluatorCallback, options, evaluatorCallback, this);
+    }
 
     return this;
 }
@@ -42,14 +47,13 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     An object or function containing targeted subscribables or the subscribable itself.
     /// </param>
     /// <param name="options" type="object">
-    ///     { depth: 1 } -> Track 1st level subscribables only(default).<br/>
-    ///     { depth: 2 } -> Track all nested subscribables down to the 2nd level.<br/>
+    ///     { depth: 2 } -> Track all nested subscribables down to the 2nd level(default is 1).<br/>
     ///     { depth: -1 } -> Track all nested subscribables.<br/>
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
-    ///     { hideWrappedValues: true } -> Ignore observables wrapped under a parent observable.<br/>
+    ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
-    ///     { wrap: true } -> Makes sure all fields are wrapped as observables.<br/>
+    ///     { wrap: true } -> Makes sure all fields are wrapped into observables. This happens on the fly for new array items.<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as such.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy idenfication.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
@@ -59,7 +63,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     /// </param>
 
     if (typeof options === 'function') {
-        context = evaluatorCallback;
+        context = context || evaluatorCallback;
         evaluatorCallback = options;
         options = {};
     }
@@ -82,7 +86,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
             if (child === parent || grandParents.indexOf(child) > -1)
                 return;
 
-            // Merge parents. Using a fresh array to avoid it being referenced within the next recursion.
+            // Merge parents. Using a fresh array so it is not referenced in the next recursion.
             var parents = [].concat(grandParents, parent && parent !== target ? parent : []);
 
             // Ignore user specified hidden objects and their children if any.
@@ -99,12 +103,12 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                             // Child is an observable array.
                             child.subscribe(function (changes) {
                                 ko.utils.arrayForEach(changes, function (item) {
-                                    // Brand new or deleted array item.
+                                    // Deleted or brand new array item.
                                     var returnValue = evaluatorCallback.call(context, parents, child, item);
                                     if (returnValue !== undefined)
                                         context(returnValue);
 
-                                    // Watch new or unwatch deleted items.
+                                    // Unwatch or watch it.
                                     setTimeout(function () {
                                         watchChildren(item.value, (notInParentList ? null : child), parents, item.status === 'added');
                                     }, 0);
@@ -123,7 +127,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                 for (var i = 0; i < subsc.change ? subsc.change.length : 0; i++)
                                     subsc.change[i].dispose();
 
-                                // Clean up any before change subscriptions used for tracking old values.
+                                // Clean up any before-change subscriptions used for tracking old values.
                                 if (options.keepOldValues > 0)
                                     for (var i = 0; i < subsc.beforeChange ? subsc.beforeChange.length : 0; i++)
                                         subsc.beforeChange[i].dispose();
@@ -133,7 +137,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                             } else {
 
                                 if (options.enabled === true && child.watchEnabled === false)
-                                    // Watch is just being re-enabled. Avoid subscribing twice.
+                                    // Only waking up a watcher. There's no need to subscribe again.
                                     return;
 
                                 if (options.keepOldValues > 0) {
@@ -172,7 +176,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                             if (sub) {
 
                                 if (options.wrap) {
-                                    // Convert simple objects or arrays into their observable counterpart.
+                                    // Automatically wrap simple objects and arrays into observables.
                                     var type = Object.prototype.toString.call(sub);
                                     if (type !== '[object Function]' && type !== '[object Object]') {
                                         if (options.wrap === true) {
@@ -203,22 +207,5 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         }
     }
 
-    if (typeof target === 'function' && !ko.isSubscribable(target)) {
-        // Target is a non-subscribable function. Let's track it.
-        ko.computed(function () {
-            // Evaluate the function to activate tracking.
-            target();
-            if (target.watchEnabled !== false) {
-                // Use setTimeout to bypass change detection for the evaluatorCallback value.
-                setTimeout(function () {
-                    returnValue = evaluatorCallback.call(context, [], target);
-                    // Check that a return value exists and assign it to the context.
-                    if (returnValue !== undefined)
-                        context(returnValue);
-                }, 0);
-            }
-        });
-    } else {
-        watchChildren(target, null, []);
-    }
+    watchChildren(target, null, []);
 }
