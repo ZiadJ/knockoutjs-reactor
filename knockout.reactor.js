@@ -91,7 +91,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 				return;
 
 			// Bypass circular references.
-			if (child === parent || grandParents.indexOf(child) > -1)
+			if (child === parent || ko.utils.arrayIndexOf(grandParents, child) > -1)
 				return;
 
 			// Merge parents. Using a fresh array so it is not referenced in the next recursion.
