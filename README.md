@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A KnockoutJS plugin which essentially adds the ability to track changes to a view model recursively and process the changes as they occur.
+A KnockoutJS plugin which allows tracking changes to a view model seamlessly and processing them individually as they occur.
 
 <b>Usage:</b>
 
@@ -22,18 +22,16 @@ The ```depth``` option is used to limit the recursion depth. Its default value 1
 	ko.watch(viewModel, { depth: -1 }, function(parents, child, item) {
 		...
 	});
-	
+
 The callback function provides three arguments:<br/>
 1. ```parents```: A list of all parents above the changed property.<br/>
 2. ```child```: The child property that was changed.<br/>
-3. ```item```: Used to determine whether an item has been added or deleted to an array.
+3. ```item```: Used to determine whether an array item has been added, moved or deleted.
 
-KO-Reactor seamlessly tracks changes for the whole object graph within a view model by recursively subscribing to all its observables. 
-For observable arrays, subscriptions are created or destroyed on the fly as new items are added or removed. However when the view model structure itself is meant to be modified the ```mutable: true``` option must be used.
+For observable array items, subscriptions are created or destroyed on the fly as those items are added or deleted. However to keep up with changes in the view model structure itself the ```mutable``` option has to be set to ```true```.
 
 <b>Auto Wrapper:</b><br/>
-By setting the ```wrap``` option to ```true``` the watcher will make sure that all fields within the targeted object are wrapped within an observable
-even when new array items are added.
+Setting the ```wrap``` option to ```true``` will make sure that all fields within the targeted object are wrapped within an observable even if new array items are added later on.
 
 <b>Chaining Support:</b><br/>
 The chaining support provided adds in more ways to simplify the code and make it more readable. For example let's consider this simple view model:
