@@ -1,7 +1,7 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.2.6 beta
+// Version 1.2.7 beta
 
 ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, evaluatorCallback, context) {
     /// <summary>
@@ -14,10 +14,10 @@ ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, eval
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes within the target structure(provided they're made through a subscribable).<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any of its subscribables.<br/>
     ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
-    ///     { wrap: true } -> Makes sure all fields are wrapped into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
+    ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy identification.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
@@ -54,10 +54,10 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes within the target structure(provided they're made through a subscribable).<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any of its subscribables.<br/>
     ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
-    ///     { wrap: true } -> Makes sure all fields are wrapped into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
+    ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy identification.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
@@ -72,9 +72,9 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         options = {};
     }
 
-    var context = context || this;
+    context = context || this;
 
-    function watchChildren(child, parent, grandParents, untrack, keepOffParentList) {
+    function watchChildren(child, parent, grandParents, unwatch, keepOffParentList) {
 
         if (child && options.depth !== 0 && (options.depth === -1 || grandParents.length < (options.depth || 1))) {
 
@@ -94,7 +94,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
             if (child === parent || ko.utils.arrayIndexOf(grandParents, child) > -1)
                 return;
 
-            // Merge parents. Using a fresh array so it is not referenced in the next recursion.
+            // Merge parents. Using a fresh array so it is not referenced in the next recursion if any.
             var parents = [].concat(grandParents, parent && parent !== target ? parent : []);
 
             // Ignore hidden objects. Also applies to any of their children.
@@ -106,18 +106,20 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
             if (ko.isSubscribable(child)) {
                 if (evaluatorCallback) {
-                    if (untrack === true || !options.beforeWatch || options.beforeWatch.call(context, parents, child) !== false) {
+                    if (unwatch === true || !options.beforeWatch || options.beforeWatch.call(context, parents, child) !== false) {
                         if (typeof child.pop === 'function') {
                             // Child is an observable array. Watch all item changes within it.
                             child.subscribe(function (changes) {
                                 ko.utils.arrayForEach(changes, function (item) {
-                                    // Deleted, brand new or moved item.
+
                                     var returnValue = evaluatorCallback.call(context, parents, child, item);
-                                    if (returnValue != undefined)
+                                    if (returnValue !== undefined)
                                         context(returnValue);
 
-                                    // Unwatch or watch it if it's not just being moved.
-                                    if (item.moved == undefined) {
+
+
+                                    if (!item.moved) {
+                                        // Deleted or brand new item. Unwatch or watch it.
                                         setTimeout(function () {
                                             watchChildren(item.value, (keepOffParentList ? null : child), parents, item.status === 'deleted');
                                         }, 0);
@@ -125,22 +127,32 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                 });
                             }, undefined, 'arrayChange');
 
-                            watchChildren(child(), (keepOffParentList ? null : child), parents, untrack, true);
+                            watchChildren(child(), (keepOffParentList ? null : child), parents, unwatch, true);
 
                             return true;
 
                         } else {
-                            if (untrack === true) {
+
+                            if (unwatch === true) {
                                 // A subscribable was removed from an array or mutable object.
                                 // Clean up all change subscriptions associated with it.
                                 var subsc = child._subscriptions;
-                                for (var i = 0; i < subsc.change ? subsc.change.length : 0; i++)
-                                    subsc.change[i].dispose();
 
-                                if (options.keepOldValues > 0)
-                                    // Also clean up any before-change subscriptions used for tracking old values.
-                                    for (var i = 0; i < subsc.beforeChange ? subsc.beforeChange.length : 0; i++)
-                                        subsc.beforeChange[i].dispose();
+
+                                if (subsc) {
+                                    if (subsc.change)
+                                        ko.utils.arrayForEach(subsc.change, function (item) {
+                                            if (item._watcher === context)
+                                                item.dispose();
+                                        });
+
+                                    if (subsc.beforeChange && options.keepOldValues > 0)
+                                        // Also clean up any before-change subscriptions used for tracking old values.
+                                        ko.utils.arrayForEach(subsc.beforeChange, function (item) {
+                                            if (item._watcher === context)
+                                                item.dispose();
+                                        });
+                                }
 
                                 watchChildren(child(), (keepOffParentList ? null : child), parents, true, true)
 
@@ -168,20 +180,24 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                             // Clean up all subscriptions for the old child object.
                                             watchChildren(oldValue, (keepOffParentList ? null : child), parents, true, true);
 
-                                    }, null, 'beforeChange');
+
+                                    }, null, 'beforeChange')._watcher = context;
                                 }
 
                                 child.subscribe(function () {
                                     if (child.watchable !== false) {
                                         var returnValue = evaluatorCallback.call(context, parents, child);
-                                        if (returnValue != undefined)
+
+                                        if (returnValue !== undefined)
                                             context(returnValue);
 
                                         if (options.mutable && typeof child() === 'object')
-                                            // Watch down the new child object tree.
+
+                                            // Watch any new comer object.
                                             watchChildren(child(), (keepOffParentList ? null : child), parents);
                                     }
-                                }, null, 'change');
+
+                                }, null, 'change')._watcher = context;
 
                                 if (options.hideWrappedValues !== true)
                                     watchChildren(child(), (keepOffParentList ? null : child), parents);
@@ -206,7 +222,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                 }
                             }
 
-                            var subHasChildren = watchChildren(sub, (keepOffParentList ? null : child), parents, untrack);
+                            var subHasChildren = watchChildren(sub, (keepOffParentList ? null : child), parents, unwatch);
 
                             if (subHasChildren && options.tagParentsWithName === true && !sub['_fieldName'])
                                 sub['_fieldName'] = property;
@@ -216,7 +232,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                     case '[object Array]':
                         if (options.hideArrays !== true)
                             for (var i = 0; i < child.length; i++)
-                                watchChildren(child[i], (keepOffParentList ? null : child), parents, untrack);
+                                watchChildren(child[i], (keepOffParentList ? null : child), parents, unwatch);
                         return true;
                 }
             }
