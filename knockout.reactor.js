@@ -1,7 +1,7 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.2.7 beta
+// Version 1.2.8 beta
 
 ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, evaluatorCallback, context) {
     /// <summary>
@@ -14,7 +14,7 @@ ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, eval
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any of its subscribables.<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its subscribables.<br/>
     ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
@@ -54,7 +54,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any of its subscribables.<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its subscribables.<br/>
     ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
@@ -116,8 +116,6 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                     if (returnValue !== undefined)
                                         context(returnValue);
 
-
-
                                     if (!item.moved) {
                                         // Deleted or brand new item. Unwatch or watch it.
                                         setTimeout(function () {
@@ -135,23 +133,21 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
                             if (unwatch === true) {
                                 // A subscribable was removed from an array or mutable object.
-                                // Clean up all change subscriptions associated with it.
-                                var subsc = child._subscriptions;
-
+                                // Clean up all its change subscriptions through either H or _subscriptions
+                                // depending on whether the Knockout code is minified or not.
+                                var subsc = child.H || child._subscriptions;
 
                                 if (subsc) {
                                     if (subsc.change)
-                                        ko.utils.arrayForEach(subsc.change, function (item) {
-                                            if (item._watcher === context)
-                                                item.dispose();
-                                        });
+                                        for (var i = subsc.change.length - 1; i >= 0; i--)
+                                            if (subsc.change[i]._watcher === context)
+                                                subsc.change[i].dispose();
 
                                     if (subsc.beforeChange && options.keepOldValues > 0)
                                         // Also clean up any before-change subscriptions used for tracking old values.
-                                        ko.utils.arrayForEach(subsc.beforeChange, function (item) {
-                                            if (item._watcher === context)
-                                                item.dispose();
-                                        });
+                                        for (var i = subsc.beforeChange.length - 1; i >= 0; i--)
+                                            if (subsc.beforeChange[i]._watcher === context)
+                                                subsc.beforeChange[i].dispose();
                                 }
 
                                 watchChildren(child(), (keepOffParentList ? null : child), parents, true, true)
@@ -180,7 +176,6 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                             // Clean up all subscriptions for the old child object.
                                             watchChildren(oldValue, (keepOffParentList ? null : child), parents, true, true);
 
-
                                     }, null, 'beforeChange')._watcher = context;
                                 }
 
@@ -192,7 +187,6 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                             context(returnValue);
 
                                         if (options.mutable && typeof child() === 'object')
-
                                             // Watch any new comer object.
                                             watchChildren(child(), (keepOffParentList ? null : child), parents);
                                     }
