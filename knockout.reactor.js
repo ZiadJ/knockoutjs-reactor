@@ -1,7 +1,7 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.2.8 beta
+// Version 1.3.0
 
 ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, evaluatorCallback, context) {
     /// <summary>
@@ -14,13 +14,14 @@ ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, eval
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its subscribables.<br/>
-    ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its own subscribables.<br/>
+    ///     { watchedOnly: true } -> Watch only subscribables tagged with .watch().<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy identification.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
+    ///     { seal: true } -> Prevent any subsequent watcher from watching down the target tree.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
     ///     The  callback function called during changes. Any return value is assigned to the chained observable.
@@ -39,7 +40,7 @@ ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, eval
     }
 
     return this;
-}
+};
 
 ko['watch'] = function (target, options, evaluatorCallback, context) {
     /// <summary>
@@ -54,13 +55,14 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { hide: [...] } -> Property or array of properties to be ignored.<br/>
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
-    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its subscribables.<br/>
-    ///     { watchedOnly: true } -> Watch only subscribables with .watch(true).<br/>
+    ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through its own subscribables.<br/>
+    ///     { watchedOnly: true } -> Watch only subscribables tagged with .watch().<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
     ///     { tagParentsWithName: true } -> Add the property '_fieldName' under each parent for easy identification.<br/>
     ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
+    ///     { seal: true } -> Prevent any subsequent watcher from watching down the target tree.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
     ///     The callback function called during changes.
@@ -89,6 +91,10 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
             // Ignore watch-disabled objects.
             if (child.watchable === false)
                 return;
+
+            // Prevent subsequent watchers from watching the target when sealed.
+            if (options.seal === true)
+                child.watchable = false;
 
             // Bypass circular references.
             if (child === parent || ko.utils.arrayIndexOf(grandParents, child) > -1)
@@ -150,7 +156,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                                 subsc.beforeChange[i].dispose();
                                 }
 
-                                watchChildren(child(), (keepOffParentList ? null : child), parents, true, true)
+                                watchChildren(child(), (keepOffParentList ? null : child), parents, true, true);
 
                             } else {
 
@@ -187,7 +193,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                             context(returnValue);
 
                                         if (options.mutable && typeof child() === 'object')
-                                            // Watch any new comer object.
+                                            // Watch the new comer object.
                                             watchChildren(child(), (keepOffParentList ? null : child), parents);
                                     }
 
@@ -238,4 +244,4 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         return ko.computed(target, evaluatorCallback, options);
 
     watchChildren(target, null, []);
-}
+};
