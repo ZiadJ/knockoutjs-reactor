@@ -1,7 +1,7 @@
 KO-Reactor
 ===========
 
-A KnockoutJS plugin which allows tracking changes to a view model seamlessly and processing them individually as they occur.
+A KnockoutJS plugin that lets you track all changes within a view model seamlessly with the ability to pin point and process them on the fly. It does not require any modifications to the markup or view model itself which makes it ideal for testing and quick prototyping.
 
 <b>Usage:</b>
 
@@ -16,7 +16,8 @@ or
 ```options``` is only optional and can be replaced by ```evaluatorCallback``` the response and evaluation function.
 
 <b>Deep Watcher:</b><br/>
-The ```depth``` option is used to limit the recursion depth. Its default value 1 limits it to a flat view model but a value of -1, as shown below, will fully unleash it:
+The ```depth``` option is used to limit the recursion depth. Its default value 1 limits it to a flat view model but a value of -1, as shown below, will 
+fully unleash it:
 
 	var viewModel = { ... };
 	ko.watch(viewModel, { depth: -1 }, function(parents, child, item) {
@@ -25,10 +26,11 @@ The ```depth``` option is used to limit the recursion depth. Its default value 1
 
 The callback function provides three arguments:<br/>
 1. ```parents```: A list of all parents above the changed property.<br/>
-2. ```child```: The child property that was changed.<br/>
-3. ```item```: Used to determine whether an array item has been added, moved or deleted.
+2. ```child```: The child property that changed.<br/>
+3. ```item```: Used to determine whether an array item has been added, moved or removed.
 
-For observable array items, subscriptions are created or destroyed on the fly as those items are added or deleted. However to keep up with changes in the view model structure itself the ```mutable``` option has to be set to ```true```.
+Note that for observable arrays, subscriptions are created or destroyed on the fly as new items are added or removed. 
+To keep up with changes in the model structure itself however the ```mutable``` option needs to be set to ```true```.
 
 <b>Auto Wrapper:</b><br/>
 Setting the ```wrap``` option to ```true``` will make sure that all fields within the targeted object are wrapped within an observable even if new array items are added later on.
@@ -42,7 +44,7 @@ var params = {
     p3 = ko.observable()
 }
 ```
-To update a variable, say ```items```, whenever any parameter within ```params``` change we would most probably write something along those lines:
+To update a variable, say ```items```, whenever any parameter within ```params``` changes we would most probably write something along those lines:
 ```js
 var items = ko.observableArray();      	 	        var items = ko.computed(function() {
 ko.computed = function() {             	    	        var p1 = self.params.p1();
@@ -54,7 +56,7 @@ ko.computed = function() {             	    	        var p1 = self.params.p1();
     self.items(newItems);               	        }
 }                                       
 ```
-However, using the plugin, we can just watch ```params``` instead like so:
+However, using the plugin, we can just watch ```params``` right away like so and let it do the rest:
 ```js
 var items = ko.observableArray();         	    	var items = ko.observableArray();
 ko.watch(params, function() {              		    items.watch(params, function() {    
@@ -62,12 +64,23 @@ ko.watch(params, function() {              		    items.watch(params, function() 
     self.items(newItems);                   	        return newItems;                    
 });                                       	      	}); 
 ```
-And chaining it together helps remove the clutter so it clearly shows how ```items``` depends on ```params```:
+Finally adding a bit of fluency to the mix we end up with the single block below:
 ```js
 var items = ko.observableArray().watch(params, function() {
     var newItems = ...;
     return newItems;    
-});    
+});
+```
+
+Note that by omitting the target parameter we obtain a chainable version of ```.subscribe```. 
+So instead of creating a subscription separately like so:
+```js
+var someProperty = ko.observable();
+someProperty.subscribe(someFunction, options);
+```
+We can do away with the redundancy like so:
+```js
+var someProperty = ko.observable().watch(someFunction, options);
 ```
 
 <b>Selective Subscription:</b><br/>
@@ -121,25 +134,24 @@ Pausing and resuming a reactor on any property can be done like so:
     this.data.watch(true);
 
 <b>Projects using KO-Reactor:</b><br/>
-As of now I'm only aware of this one:
+As of now I'm only aware of this excellent undo manager by Stefano Bagnara:
 
 https://github.com/bago/knockout-undomanager
 
-So feel free to let me know if you have something to bring in and I'll mention it here.
+Here's a Plunker showing it in action on an array within an array:
+
+http://plnkr.co/edit/nB2129?p=preview
+
+Do feel free to let me know if you have anything related to share and I'll gladly mention it here.
 
 <b>Further Notes:</b><br/>
 Unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
 So we no longer have to concerned about creating unintended triggers as the code gets more complex.
 
-Two alternative usage examples which were not mentioned above but which might come in handy are:
+Yet another usage not mentioned above example involves calling ```watch``` on a function as shown below:
 
-	ko.watch(function() { ... }, options);
+    ko.watch(function() { ... }, options);
 
-which simply returns a computed and:
+However it is nothing more than a cosmetic enhancement since it only returns a ```computed``` of the function being passed in.
 
-	var property = ko.observable().watch(function() { ... }, options);
-
-which provides a chainable version of ```.subscribe```.
-
-
-For a full list of available options please consult the ```param``` sections of the source code.
+For an extensive list of available options please consult the ```param``` sections of the source code.
