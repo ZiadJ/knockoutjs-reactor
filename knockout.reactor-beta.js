@@ -1,7 +1,7 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.3.3 beta
+// Version 1.3.4 beta
 
 ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCallback, context) {
     /// <summary>
@@ -18,13 +18,13 @@ ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCall
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
     ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any subscribable.<br/>
-    ///     { watchedOnly: true } -> Watch only subscribables tagged with .watch().<br/>
+    ///     { watchedOnly: true } -> Watch only subscribables tagged with a .watch().<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
-    ///     { tagFields: true } -> Add the property '_fieldName' under each property for easy identification.<br/>
-    ///     { tagFields: 'parentsOnly' } -> Same as above except that it only applies for parent properties.<br/>
-    ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
+    ///     { tagFields: true } -> Add the property '_fieldName' under each property for identification purposes.<br/>
+    ///     { tagFields: 'parentsOnly' } -> Same as above except that it is limited to parent properties only.<br/>
+    ///     { oldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
     ///     { seal: true } -> Prevent any subsequent watcher from watching the target.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
@@ -60,13 +60,13 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { hideArrays: true } -> Ignore all nested arrays.<br/>
     ///     { hideWrappedValues: true } -> Ignore observables wrapped under yet another parent observable.<br/>
     ///     { mutable: true } -> Dynamically adapt to changes made to the target structure through any subscribable.<br/>
-    ///     { watchedOnly: true } -> Watch only subscribables tagged with .watch().<br/>
+    ///     { watchedOnly: true } -> Watch only subscribables tagged with a .watch().<br/>
     ///     { beforeWatch: function(parents, child) {...} } -> Function called prior to creating a subscription. Returning false aborts the operation and ignores its children.<br/>
     ///     { wrap: true } -> Wrap all fields into observables. This happens on the fly for new array items(or child objects when mutable is set to true).<br/>
     ///     { beforeWrap: function(parents, field, value) {...} } -> Function called prior to wrapping a value into an observable. Returning false leaves it as it is.<br/>
-    ///     { tagFields: true } -> Add the property '_fieldName' under each property for easy identification.<br/>
-    ///     { tagFields: 'parentsOnly' } -> Same as above except that it only applies for parent properties.<br/>
-    ///     { keepOldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
+    ///     { tagFields: true } -> Add the property '_fieldName' under each property for identification purposes.<br/>
+    ///     { tagFields: 'parentsOnly' } -> Same as above except that it is limited to parent properties only.<br/>
+    ///     { oldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
     ///     { seal: true } -> Prevent any subsequent watcher from watching the target.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
@@ -110,38 +110,35 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
             // Ignore hidden objects. Also applies to any of their children.
             if (options.hide)
-                if (/*Object.prototype.toString.call(options.hide) !== '[object Array]'
-                    ? options.hide === child
-                    : */ko.utils.arrayIndexOf(options.hide, child) > -1)
+                if (ko.utils.arrayIndexOf(options.hide, child) > -1)
                     return;
 
             if (ko.isSubscribable(child)) {
-                if (evaluatorCallback)
-                    if (unwatch === true) {
-                        // A subscribable was removed from an array or mutable object.
-                        // Clean up all its change subscriptions through either H or _subscriptions
-                        // depending on whether the Knockout code is minified or not.
-                        disposeWatcher(child.H || child._subscriptions, parents, keepOffParentList);
+                if (evaluatorCallback) {
+                    if (options.enabled === true && child.watchable === false)
+                        // Only waking up an existing watcher. Let's not add another.
+                        return;
 
-                        watchChildren(child(), (keepOffParentList ? null : child), parents, true, true);
-                    } else if (!options.beforeWatch || options.beforeWatch.call(context, parents, child) !== false) {
+                    if (unwatch || !options.beforeWatch || options.beforeWatch.call(context, parents, child) !== false) {
                         if (typeof child.pop === 'function') {
-                            assignWatcher(child, true, parents, keepOffParentList);
+                            if (unwatch)
+                                disposeWatcher(child);
+                            else
+                                assignWatcher(child, true, parents, keepOffParentList);
 
                             watchChildren(child(), (keepOffParentList ? null : child), parents, false, true);
-
                             return true;
                         } else {
-                            if (options.enabled === true && child.watchable === false)
-                                // Only waking up an existing watcher. Let's not add another.
-                                return;
-
-                            assignWatcher(child, false, parents, keepOffParentList);
+                            if (unwatch)
+                                disposeWatcher(child);
+                            else
+                                assignWatcher(child, false, parents, keepOffParentList);
 
                             if (options.hideWrappedValues !== true)
-                                return watchChildren(child(), (keepOffParentList ? null : child), parents);
+                                return watchChildren(child(), (keepOffParentList ? null : child), parents, false, true);
                         }
                     }
+                }
             } else {
                 switch (Object.prototype.toString.call(child)) {
                     case '[object Object]':
@@ -158,11 +155,11 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                 }
                             }
 
-                            var subHasChildren = watchChildren(sub, (keepOffParentList ? null : child), parents, unwatch);
+                            var hasChildren = watchChildren(sub, (keepOffParentList ? null : child), parents, unwatch);
 
                             if (options.tagFields)
-                                if ((subHasChildren || options.tagFields !== 'parentsOnly') && sub['_fieldName'] === undefined)
-                                    sub['_fieldName'] = property;
+                                if ((hasChildren || options.tagFields !== 'parentsOnly') && sub._fieldName === undefined)
+                                    sub._fieldName = property;
                         });
                         return true;
 
@@ -176,14 +173,18 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         }
     }
 
-    function disposeWatcher(subsc, parents, keepOffParentList) {
+    function disposeWatcher(child) {
+        // Subscriptions are stored under either H or _subscriptions
+        // depending on whether KnockoutJS is minified or not.
+        var subsc = child.H || child._subscriptions;
+
         if (subsc) {
             if (subsc.change)
                 for (var i = subsc.change.length - 1; i >= 0; i--)
                     if (subsc.change[i]._watcher === context)
                         subsc.change[i].dispose();
 
-            if (subsc.beforeChange && options.keepOldValues > 0)
+            if (subsc.beforeChange && options.oldValues > 0)
                 // Also clean up any before-change subscriptions used for tracking old values.
                 for (var i = subsc.beforeChange.length - 1; i >= 0; i--)
                     if (subsc.beforeChange[i]._watcher === context)
@@ -224,9 +225,9 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
             }, null, 'change')._watcher = context;
 
-            if (options.keepOldValues > 0 || options.mutable) {
+            if (options.oldValues > 0 || options.mutable) {
                 child.subscribe(function (oldValue) {
-                    if (options.keepOldValues > 0) {
+                    if (options.oldValues > 0) {
                         // Add old value to history list before every update.
                         var values = (child['oldValues']
                             ? child['oldValues']
@@ -234,7 +235,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
                         values.unshift(oldValue);
 
-                        while (values.length > options.keepOldValues)
+                        while (values.length > options.oldValues)
                             values.pop();
                     }
 
