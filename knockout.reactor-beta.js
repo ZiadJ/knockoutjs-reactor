@@ -173,22 +173,33 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         }
     }
 
+    var subscriptionField;
+    if (typeof ko.DEBUG !== 'undefined') subscriptionField = '_subscriptions';
+    else if (ko.version == "3.0.0") subscriptionField = 'F';
+    else if (ko.version == "3.1.0") subscriptionField = 'H';
+    else if (ko.version == "3.2.0") subscriptionField = 'M';
+    else if (ko.version == "3.3.0") subscriptionField = 'G';
+    else throw "Unsupported minimized Knockout version "+ko.version+" (supported DEBUG or minimized 3.0.0 ... 3.3.0)";
+
     function disposeWatcher(child) {
         // Subscriptions are stored under either H or _subscriptions
         // depending on whether KnockoutJS is minified or not.
-        var subsc = child.H || child._subscriptions;
+        var subsc = child[subscriptionField];
+        var i;
 
         if (subsc) {
             if (subsc.change)
-                for (var i = subsc.change.length - 1; i >= 0; i--)
+                for (i = subsc.change.length - 1; i >= 0; i--)
                     if (subsc.change[i]._watcher === context)
                         subsc.change[i].dispose();
 
             if (subsc.beforeChange && options.oldValues > 0)
                 // Also clean up any before-change subscriptions used for tracking old values.
-                for (var i = subsc.beforeChange.length - 1; i >= 0; i--)
+                for (i = subsc.beforeChange.length - 1; i >= 0; i--)
                     if (subsc.beforeChange[i]._watcher === context)
                         subsc.beforeChange[i].dispose();
+        } else {
+            throw "Subscription field (."+subscriptionField+") not defined for observable child";
         }
     }
 
