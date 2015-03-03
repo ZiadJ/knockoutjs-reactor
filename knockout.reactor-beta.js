@@ -3,7 +3,7 @@
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
 // Version 1.3.4 beta
 
-ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCallback, context) {
+ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCallback, context, unwatch) {
     /// <summary>
     ///     Track and manage changes within the chained observable down to any given level. 
     /// </summary>
@@ -46,7 +46,11 @@ ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCall
     return this;
 };
 
-ko['watch'] = function (target, options, evaluatorCallback, context) {
+ko.subscribable.fn['unwatch'] = function (targetOrCallback, options, evaluatorCallback, context) {
+  return ko.subscribable.fn['watch'](targetOrCallback, options, evaluatorCallback, context, true);
+};
+
+ko['watch'] = function (target, options, evaluatorCallback, context, unwatch) {
     /// <summary>
     ///     Track and manage changes within a specific target object down to any given level.
     /// </summary>
@@ -263,5 +267,9 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     if (typeof target === 'function' && !ko.isSubscribable(target))
         return ko.computed(target, evaluatorCallback, options);
 
-    watchChildren(target, null, []);
+    watchChildren(target, null, [], unwatch);
+};
+
+ko['unwatch'] = function(target, options, evaluatorCallback, context) {
+  return ko['watch'](target, options, evaluatorCallback, context, true);
 };
