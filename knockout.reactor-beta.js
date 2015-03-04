@@ -209,6 +209,11 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                 for (var i = subsc.beforeChange.length - 1; i >= 0; i--)
                     if (subsc.beforeChange[i]._watcher === context)
                         subsc.beforeChange[i].dispose();
+
+            if (subsc.arrayChange)
+                for (var i = subsc.arrayChange.length - 1; i >= 0; i--)
+                    if (subsc.arrayChange[i]._watcher === context)
+                        subsc.arrayChange[i].dispose();
         } else {
             throw "Subscriptions field (." + subscriptionsField + ") not defined for observable child " + (child._fieldName || "");
         }
@@ -230,7 +235,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                         }, 0);
                     }
                 });
-            }, undefined, 'arrayChange');
+            }, undefined, 'arrayChange')._watcher = context;
 
         } else {
             child.subscribe(function () {
@@ -280,5 +285,5 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         dispose: function () {
             watchChildren(target, null, [], true);
         }
-    }
+    };
 };
