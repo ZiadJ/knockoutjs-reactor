@@ -76,6 +76,10 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
     context = context || this;
 
+    function getUnderlyingObservable(obj, propertyName) {
+        return ko.getObservable && ko.getObservable(obj, propertyName);
+    }
+
     function watchChildren(child, parent, grandParents, unwatch, keepOffParentList) {
 
         if (child && options.depth !== 0 && (options.depth === -1 || grandParents.length < (options.depth || 1))) {
@@ -220,6 +224,8 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                             : ko.observable(sub);
                                     }
                                 }
+                            } else {
+                                sub = getUnderlyingObservable(child, property) || sub;    
                             }
 
                             var subHasChildren = watchChildren(sub, (keepOffParentList ? null : child), parents, unwatch);
