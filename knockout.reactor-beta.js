@@ -70,6 +70,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
     ///     { oldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
     ///     { seal: true } -> Prevent any subsequent watcher from watching the target again.<br/>
     ///     { unloop: true } -> Avoid circular paths through the use of a breadcrumb property '_watcher' set at each node level.<br/>
+    ///     { getter: function(parents, child, property) {...} } -> Function used to retrieve the property value from the given child. False can be returned to ignore the property.<br/>
     /// </param>
     /// <param name="evaluatorCallback" type="function">
     ///     The callback function called during changes.
@@ -145,8 +146,9 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                         }
                     }
                 } else {
-                    if (Object.prototype.toString.call(child) === '[object Object]') { // '[object Array]'
+                    if (Object.prototype.toString.call(child) === '[object Object]') {
                         ko.utils.objectForEach(child, function (property, sub) {
+                            sub = options.getter ? options.getter.call(context, parents, child, property) : sub;
                             if (sub) {
                                 if (options.wrap) {
                                     // Wrap simple objects and arrays into observables.
@@ -171,7 +173,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                                         sub._fieldName = property;
                             }
                         });
-                    } else {
+                    } else { // '[object Array]'
                         if (options.hideArrays !== true)
                             for (var i = 0; i < child.length; i++)
                                 watchChildren(child[i], keepOffParentList ? null : child, parents, unwatch);
