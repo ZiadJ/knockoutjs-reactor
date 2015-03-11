@@ -206,7 +206,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
                     if (subsc.change[i]._watcher === context)
                         subsc.change[i].dispose();
 
-            if (subsc.beforeChange && options.oldValues > 0)
+            if (subsc.beforeChange && (options.mutable || options.oldValues > 0))
                 // Also clean up any before-change subscriptions used for tracking old values.
                 for (var i = subsc.beforeChange.length - 1; i >= 0; i--)
                     if (subsc.beforeChange[i]._watcher === context)
