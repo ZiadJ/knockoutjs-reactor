@@ -1,0 +1,29 @@
+{
+  "name": "ko-reactor",
+  "homepage": "https://github.com/ZiadJ/knockoutjs-reactor.git",
+  "authors": [
+    "Ziad Jeeroburkhan",
+    "Jacob Kelley <jakie8@gmail.com>"
+  ],
+  "description": "Deeply watches observable changes",
+  "main": [
+    "dist/ko-reactor.min.js"
+  ],
+  "keywords": [
+    "knockout",
+    "reactive",
+    "reactor",
+    "watch"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "knockout": "~3.3.0"
+  }
+}

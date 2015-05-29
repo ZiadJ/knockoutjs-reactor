@@ -5,7 +5,7 @@
 
 ko.subscribable.fn['watch'] = function (targetOrEvaluatorCallback, options, evaluatorCallback, context) {
     /// <summary>
-    ///     Track and manage changes within the chained observable down to any given level. 
+    ///     Track and manage changes within the chained observable down to any given level.
     /// </summary>
     /// <param name="options" type="object">
     ///     false -> Disables tracking on the chained observable.
