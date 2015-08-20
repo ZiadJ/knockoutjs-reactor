@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     var banner = [
       "<%= pkg.name %> v<%= pkg.version %>",
       "The MIT License (MIT)",
-      "Copyright (c) 2014 <%= pkg.author %>"
+      "Copyright (c) 2015 <%= pkg.author %>"
     ].join("\n * ").trim();
 
     grunt.initConfig({
@@ -22,7 +22,6 @@ module.exports = function(grunt) {
             copy: {
                 files: {
                     'dist/ko-reactor.js': ["src/knockout.reactor.js"],
-                    'dist/ko-reactor-beta.js': ["src/knockout.reactor-beta.js"]
                 }
             }
         },
@@ -40,7 +39,6 @@ module.exports = function(grunt) {
             main: {
                 files: {
                     'dist/ko-reactor.min.js': ['dist/ko-reactor.js'],
-                    'dist/ko-reactor-beta.min.js': ["dist/ko-reactor-beta.js"]
                 }
             }
         },
