@@ -142,6 +142,10 @@ Here's a Plunker showing it in action on an array within an array:
 
 http://plnkr.co/edit/nB2129?p=preview
 
+Reactor is also used (via Undomanager) in Mosaico the first opensource Email Template Editor:
+
+https://github.com/voidlabs/mosaico
+
 Do feel free to let me know if you have anything related to share and I'll gladly mention it here.
 
 <b>Further Notes:</b><br/>
