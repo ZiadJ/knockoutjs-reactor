@@ -13,7 +13,7 @@
     } else {
         factory(window.ko);
     }
-}(function (ko, $) {
+}(function (ko) {
 ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCallback, context) {
     /// <summary>
     ///     Track and manage changes within the chained observable down to any given level. 
