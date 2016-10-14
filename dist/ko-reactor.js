@@ -1,8 +1,19 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.3.6
-
+// Version 1.3.7
+; (function (factory) {
+    // CommonJS
+    if (typeof require === 'function' && typeof exports === 'object' && typeof module === 'object') {
+        factory(require('knockout'));
+        // AMD
+    } else if (typeof define === 'function' && define.amd) {
+        define(['knockout'], factory);
+        // Normal script tag
+    } else {
+        factory(window.ko);
+    }
+}(function (ko) {
 ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCallback, context) {
     /// <summary>
     ///     Track and manage changes within the chained observable down to any given level. 
@@ -290,3 +301,5 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         }
     };
 };
+
+}));
