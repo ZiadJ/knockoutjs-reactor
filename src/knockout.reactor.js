@@ -206,7 +206,8 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         case "3.2.0": subscriptionsField = 'M'; break;
         case "3.3.0": subscriptionsField = 'G'; break;
         case "3.4.0": subscriptionsField = 'K'; break;
-        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.4.0 are supported when minified. Current version is " + ko.version;
+        case "3.4.1": subscriptionsField = 'K'; break;
+        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.4.1 are supported when minified. Current version is " + ko.version;
     }
 
     function disposeWatcher(child) {
