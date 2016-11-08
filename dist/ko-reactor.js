@@ -1,7 +1,7 @@
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.3.7
+// Version 1.3.8
 ; (function (factory) {
     // CommonJS
     if (typeof require === 'function' && typeof exports === 'object' && typeof module === 'object') {
@@ -206,7 +206,8 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         case "3.2.0": subscriptionsField = 'M'; break;
         case "3.3.0": subscriptionsField = 'G'; break;
         case "3.4.0": subscriptionsField = 'K'; break;
-        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.4.0 are supported when minified. Current version is " + ko.version;
+        case "3.4.1": subscriptionsField = 'K'; break;
+        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.4.1 are supported when minified. Current version is " + ko.version;
     }
 
     function disposeWatcher(child) {
