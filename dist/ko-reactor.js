@@ -198,8 +198,10 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
     // Subscriptions are stored under either the _subscriptions field for the debug version
     // or the F, H or M fields when minified depending on the version used.
+    // NOTE: we used to use ko.DEBUG to detect the debug versionbut it was removed in 3.4.0+,
+    //       so we now check the existence of a "subscription" function.
     var subscriptionsField;
-    switch (ko.DEBUG || ko.version) {
+    switch (typeof ko.subscription == 'function' || ko.version) {
         case true: subscriptionsField = '_subscriptions'; break;
         case "3.0.0": subscriptionsField = 'F'; break;
         case "3.1.0": subscriptionsField = 'H'; break;
