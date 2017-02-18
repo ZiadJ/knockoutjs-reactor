@@ -123,7 +123,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
                 // Ignore hidden objects. Also applies to any of their children.
                 if (options.hide)
-                    if (ko.utils.arrayIndexOf(options.hide, child) > -1)
+                    if (ko.utils.arrayIndexOf(options.hide, fieldName) > -1)
                         return;
 
                 // Merge parents. Using a fresh array so it is not referenced in the next recursion if any.
