@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     var banner = [
       "<%= pkg.name %> v<%= pkg.version %>",
       "The MIT License (MIT)",
-      "Copyright (c) 2016 <%= pkg.author %>"
+      "Copyright (c) 2017 <%= pkg.author %>",
     ].join("\n * ").trim();
 
     grunt.initConfig({
@@ -17,7 +17,7 @@ module.exports = function(grunt) {
 
         concat: {
             options: {
-                //banner: "/*! " + banner + " */\n\n"
+                banner: "/*! " + banner + " */\n"
             },
             copy: {
                 files: {
@@ -32,9 +32,10 @@ module.exports = function(grunt) {
 
         uglify: {
             options: {
-                //banner: "/*! " + banner + " */\n",
                 footer: "window.foo = \"<%= pkg.version %>\";",
-                preserveComments: 'some'
+                output: {
+                    comments: '/^!/'
+                }
             },
             main: {
                 files: {
@@ -48,6 +49,18 @@ module.exports = function(grunt) {
                 files: 'src/*.js',
                 tasks: ['jshint', 'uglify']
             }
+        },
+
+        jasmine: {
+            main: {
+                src: 'src/**/*.js',
+                options: {
+                    specs: 'spec/*.js',
+                    vendor: [
+                      'https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js'
+                    ]
+                }
+            }
         }
     });
 
@@ -55,6 +68,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-jasmine');
 
     grunt.registerTask('default', ['concat', 'uglify']);
     grunt.registerTask('develop', ['concat', 'uglify', 'watch']);

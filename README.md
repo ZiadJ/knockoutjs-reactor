@@ -133,6 +133,18 @@ Pausing and resuming a reactor on any property can be done like so:
     //...do work
     this.data.watch(true);
 
+<b>Dispose/Unwatch:</b><br/>
+The ```watch``` function returns an object with a "dispose" method you can call to dispose the watch action:
+
+    var viewModel = { ... };
+    var res = ko.watch(viewModel, { depth: -1 }, function(parents, child, item) {
+        ...
+    });
+
+    res.dispose();
+
+Once disposed your model will be "unwatched"<br/>
+
 <b>Projects using KO-Reactor:</b><br/>
 As of now I'm only aware of this excellent undo manager by Stefano Bagnara:
 
@@ -159,3 +171,22 @@ Yet another usage not mentioned above example involves calling ```watch``` on a 
 However it is nothing more than a cosmetic enhancement since it only returns a ```computed``` of the function being passed in.
 
 For an extensive list of available options please consult the ```param``` sections of the source code.
+
+Development
+===========
+
+In order to build and minify you can simply call grunt:
+
+    grunt
+
+If you want a live rebuild for each changed
+
+    grunt develop
+
+If you want to run the test suite:
+
+    grunt jasmine
+
+If you want to generate the test runner in order to run the test suite in your browser
+
+    grunt jasmine:main:build
