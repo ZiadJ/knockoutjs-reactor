@@ -145,6 +145,16 @@ The ```watch``` function returns an object with a "dispose" method you can call 
 
 Once disposed your model will be "unwatched"<br/>
 
+<b>Synchronous tracking:</b> (since 1.4.0)<br/>
+By default when new objects are added to the tree, they are automatically "watched" asynchronously (e.g: in a setTimeout) in order to keep the system more responsive.
+
+Sometimes this behaviour is not "expected", so you can use the ```synchWatch: true``` option to force watch to happen "inline".
+
+<b>Single notification for multiple array changes vs change by change notifications</b> (since 1.4.0)<br/>
+By default when items are moved in an array you receive 2 different notifications, the first will report the "deleted item" and the second one will report the "added item".
+
+If you prefer to receive an array of items in a single notification you can use the ```splitArrayChanges: false``` option. In that case you will receive an array of item instead of a single item even when there is only one item changed.
+
 <b>Projects using KO-Reactor:</b><br/>
 As of now I'm only aware of this excellent undo manager by Stefano Bagnara:
 
@@ -162,7 +172,7 @@ Do feel free to let me know if you have anything related to share and I'll gladl
 
 <b>Further Notes:</b><br/>
 Unlike ```ko.computed``` no listeners are created for subcribables within the evaluator function. 
-So we no longer have to concerned about creating unintended triggers as the code gets more complex.
+So we no longer have to be concerned about creating unintended triggers as the code gets more complex.
 
 Yet another usage not mentioned above example involves calling ```watch``` on a function as shown below:
 
