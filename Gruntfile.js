@@ -57,7 +57,8 @@ module.exports = function(grunt) {
                 options: {
                     specs: 'spec/*.js',
                     vendor: [
-                      'https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js'
+                      // 'https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js'
+                      './node_modules/knockout/build/output/knockout-latest.js'
                     ]
                 }
             }

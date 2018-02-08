@@ -1,6 +1,9 @@
 {
   "name": "ko-reactor",
   "author": "Ziad Jeeroburkhan",
+  "contributors": [
+    "Stefano Bagnara"
+  ],
   "version": "1.4.0-beta2",
   "repository": {
     "type": "git",
@@ -10,6 +13,9 @@
     "build": "./node_modules/grunt-cli/bin/grunt",
     "build-watch": "./node_modules/grunt-cli/bin/grunt develop"
   },
+  "dependencies": {
+    "knockout": "3.0.0 - 3.5.0-beta"
+  },
   "devDependencies": {
     "grunt": "~1.0.1",
     "grunt-cli": "~1.2.0",
@@ -18,5 +24,6 @@
     "grunt-contrib-jshint": "~1.1.0",
     "grunt-contrib-uglify": "~3.1.0",
     "grunt-contrib-watch": "~1.0.0"
-  }
+  },
+  "license": "MIT"
 }
