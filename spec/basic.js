@@ -65,7 +65,7 @@ describe('watching nested models', function() {
 
     var answers = [];
 
-    var w = ko.watch(model, { depth: -1, oldValues: 1, mutable: true, /* tagParentsWithName: true */ tagFields: true, synchWatch: true }, listener.bind(undefined, answers), context);
+    var w = ko.watch(model, { depth: -1, oldValues: 1, mutable: true, /* tagParentsWithName: true */ tagFields: true, async: false }, listener.bind(undefined, answers), context);
     
     console.log("##### ", "model.a(2) [1]");
     model.a(2);
@@ -205,7 +205,7 @@ describe('watching nested models', function() {
 
     var answers = [];
 
-    var w = ko.watch(model, { depth: -1, oldValues: 1, mutable: true, /* tagParentsWithName: true */ tagFields: true, synchWatch: true }, listener.bind(undefined, answers), context);
+    var w = ko.watch(model, { depth: -1, oldValues: 1, mutable: true, /* tagParentsWithName: true */ tagFields: true, async: false }, listener.bind(undefined, answers), context);
 
     console.log("##### ", "model.arr()[1].p('b2')");
     model.arr()[1].p('b2');

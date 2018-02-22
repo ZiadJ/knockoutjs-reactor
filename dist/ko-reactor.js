@@ -1,10 +1,9 @@
-/*! ko-reactor v1.4.0-beta3
+/*! ko-reactor v1.4.0
  * The MIT License (MIT)
- * Copyright (c) 2017 Ziad Jeeroburkhan */
+ * Copyright (c) 2018 Ziad Jeeroburkhan */
 // Deep observer plugin for Knockout http://knockoutjs.com/
 // (c) Ziad Jeeroburkhan
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
-// Version 1.3.8
 ; (function (factory) {
     // CommonJS
     if (typeof require === 'function' && typeof exports === 'object' && typeof module === 'object') {
@@ -39,7 +38,7 @@ ko.subscribable.fn['watch'] = function (targetOrCallback, options, evaluatorCall
     ///     { tagFields: true } -> Add the property '_fieldName' under each property for textual identification.<br/>
     ///     { tagFields: 'parentsOnly' } -> Same as above except that it is limited to parent properties only.<br/>
     ///     { oldValues: 3 } -> Keep the last three values for each subscribable under the property 'oldValues'.<br/>
-    ///     { synchWatch: true } -> Use setTimeout to start watching new objects
+    ///     { async: false } -> Start watching new objects synchronously
     ///     { splitArrayChanges: false } -> receive a single notification for array changes as an array of "items" instead of multiple notifications
     ///     { seal: true } -> Prevent any subsequent watcher from watching the target again.<br/>
     ///     { unloop: true } -> Avoid circular paths through the use of a breadcrumb property '_watcher' set at each node level.<br/>
@@ -262,7 +261,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
                     if (!item.moved) {
                         // Deleted or brand new item. Unwatch or watch it accordingly.
-                        if (options.synchWatch) {
+                        if (options.async === false) {
                             watchChildren(item.value, (keepOffParentList ? null : child), parents, item.status === 'deleted');
                         } else {
                             setTimeout(function () {
@@ -283,7 +282,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
 
                     if (options.mutable && typeof child() === 'object') {
                         // Watch the new comer.
-                        if (options.synchWatch) {
+                        if (options.async === false) {
                             watchChildren(child(), (keepOffParentList ? null : child), parents, false, true);
                         } else {
                             setTimeout(function () {

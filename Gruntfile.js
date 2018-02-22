@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     var banner = [
       "<%= pkg.name %> v<%= pkg.version %>",
       "The MIT License (MIT)",
-      "Copyright (c) 2017 <%= pkg.author %>",
+      "Copyright (c) 2018 <%= pkg.author %>",
     ].join("\n * ").trim();
 
     grunt.initConfig({

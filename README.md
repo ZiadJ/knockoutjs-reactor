@@ -148,7 +148,7 @@ Once disposed your model will be "unwatched"<br/>
 <b>Synchronous tracking:</b> (since 1.4.0)<br/>
 By default when new objects are added to the tree, they are automatically "watched" asynchronously (e.g: in a setTimeout) in order to keep the system more responsive.
 
-Sometimes this behaviour is not "expected", so you can use the ```synchWatch: true``` option to force watch to happen "inline".
+Sometimes this behaviour is not "expected", so you can use the ```async: false``` option to force watch to happen "inline".
 
 <b>Single notification for multiple array changes vs change by change notifications</b> (since 1.4.0)<br/>
 By default when items are moved in an array you receive 2 different notifications, the first will report the "deleted item" and the second one will report the "added item".
