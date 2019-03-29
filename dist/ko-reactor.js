@@ -1,4 +1,4 @@
-/*! ko-reactor v1.4.0
+/*! ko-reactor v1.4.1
  * The MIT License (MIT)
  * Copyright (c) 2018 Ziad Jeeroburkhan */
 // Deep observer plugin for Knockout http://knockoutjs.com/
@@ -214,8 +214,8 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         case "3.4.0": subscriptionsField = 'K'; break;
         case "3.4.1": subscriptionsField = 'K'; break;
         case "3.4.2": subscriptionsField = 'F'; break;
-        case "3.5.0-beta": subscriptionsField = 'S'; break;
-        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.5.0-beta are supported when minified. Current version is " + ko.version;
+        case "3.5.0": subscriptionsField = 'S'; break;
+        default: throw "Unsupported Knockout version. Only v3.0.0 to v3.5.0 finals are supported when minified. Current version is " + ko.version;
     }
 
     function disposeWatcher(child) {

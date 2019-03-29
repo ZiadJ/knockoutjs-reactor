@@ -4,7 +4,7 @@
   "contributors": [
     "Stefano Bagnara"
   ],
-  "version": "1.4.0",
+  "version": "1.4.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/ZiadJ/knockoutjs-reactor.git"
@@ -14,16 +14,16 @@
     "build-watch": "./node_modules/grunt-cli/bin/grunt develop"
   },
   "dependencies": {
-    "knockout": "3.0.0 - 3.5.0-beta"
+    "knockout": "3.0.0 - 3.5.0"
   },
   "devDependencies": {
-    "grunt": "~1.0.1",
-    "grunt-cli": "~1.2.0",
+    "grunt": "^1.0.4",
+    "grunt-cli": "~1.3.2",
     "grunt-contrib-concat": "~1.0.1",
-    "grunt-contrib-jasmine": "~1.1.0",
-    "grunt-contrib-jshint": "~1.1.0",
-    "grunt-contrib-uglify": "~3.1.0",
-    "grunt-contrib-watch": "~1.0.0"
+    "grunt-contrib-jasmine": "~2.0.3",
+    "grunt-contrib-jshint": "~2.1.0",
+    "grunt-contrib-uglify": "~4.0.1",
+    "grunt-contrib-watch": "^1.1.0"
   },
   "license": "MIT"
 }
