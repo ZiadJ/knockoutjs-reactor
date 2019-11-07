@@ -212,6 +212,7 @@ ko['watch'] = function (target, options, evaluatorCallback, context) {
         case "3.4.1": subscriptionsField = 'K'; break;
         case "3.4.2": subscriptionsField = 'F'; break;
         case "3.5.0": subscriptionsField = 'S'; break;
+        case "3.5.1": subscriptionsField = 'U'; break;
         default: throw "Unsupported Knockout version. Only v3.0.0 to v3.5.0 finals are supported when minified. Current version is " + ko.version;
     }
 
