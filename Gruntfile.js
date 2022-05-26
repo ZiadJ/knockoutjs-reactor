@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     var banner = [
       "<%= pkg.name %> v<%= pkg.version %>",
       "The MIT License (MIT)",
-      "Copyright (c) 2018 <%= pkg.author %>",
+      "Copyright (c) 2022 <%= pkg.author %>",
     ].join("\n * ").trim();
 
     grunt.initConfig({
@@ -55,6 +55,7 @@ module.exports = function(grunt) {
             main: {
                 src: 'src/**/*.js',
                 options: {
+                    version: '2.9.1',
                     specs: 'spec/*.js',
                     vendor: [
                       // 'https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js'
