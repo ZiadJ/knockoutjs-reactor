@@ -1,6 +1,6 @@
 KO-Reactor
 ===========
-[![NPM](https://nodei.co/npm/ko-reactor.png)](https://nodei.co/npm/ko-reactor/)
+[![NPM](https://nodei.co/npm/ko-reactor.png)](https://www.npmjs.com/package/ko-reactor)
 
 __KO-Reactor__ is a KnockoutJS plugin that lets you track all changes within a view model seamlessly with the ability to pin point and process them on the fly. It does not require any modifications to the markup or view model itself which makes it ideal for testing and quick prototyping.
 
